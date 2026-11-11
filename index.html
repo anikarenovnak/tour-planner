@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tour Day Planner</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Layout: app shell with sticky tab bar; Day tab = timeline (+ map column on wide screens) */
+:root{
+  --bg:#f6f5f2; --card:#ffffff; --ink:#2f2f2f; --head:#4a4a4a; --muted:#7a766e; --line:#e4e0d8;
+  --gold:#d1bf99; --gold-ink:#8f7850; --on-gold:#2f2a22; --gold-soft:#f1ead9;
+  --d1:#2f6f73; --d2:#8a5a9e; --ok:#3d8b5a; --warn:#b5652b; --danger:#b03a3a;
+  --f-head:"Jost",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#18181a; --card:#222225; --ink:#ecebe8; --head:#d9d7d2; --muted:#a29e96; --line:#35353a;
+  --gold:#cfb98f; --gold-ink:#d6c39c; --on-gold:#2f2a22; --gold-soft:#3a3428;
+  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#18181a; --card:#222225; --ink:#ecebe8; --head:#d9d7d2; --muted:#a29e96; --line:#35353a;
+  --gold:#cfb98f; --gold-ink:#d6c39c; --on-gold:#2f2a22; --gold-soft:#3a3428;
+  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-head);font-weight:500;color:var(--head);margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--gold-ink)}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--card)}
+
+/* top bar + tabs */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--card);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:wrap}
+.brand{font-family:var(--f-head);letter-spacing:.18em;font-size:12px;text-transform:uppercase;color:var(--head);white-space:nowrap}
+.brand b{font-weight:600}
+.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.tab{border:0;background:none;padding:14px 12px;cursor:pointer;color:var(--muted);font-family:var(--f-head);font-size:15px;border-bottom:2px solid transparent;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--head);border-color:var(--gold)}
+.tab .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+@media (max-width:640px){.top .wrap{gap:0}.brand{width:100%;padding-top:10px}.tabs{margin-left:-8px;width:calc(100% + 8px)}}
+
+main{padding-block:20px 80px}
+.view[hidden]{display:none!important}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.eyebrow{font-family:var(--f-head);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink)}
+.btn{display:inline-flex;align-items:center;gap:6px;justify-content:center;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 14px;cursor:pointer;text-decoration:none;color:var(--ink);font-size:13.5px;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:500}
+.btn.ghost{border-color:transparent;background:none;color:var(--gold-ink);padding-inline:6px}
+.btn.small{padding:5px 10px;font-size:12.5px}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+input[type=text],input[type=time],input[type=date],input[type=number],select,textarea{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical}
+label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:8px 16px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);color:var(--on-gold);font-weight:500}
+.chk{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer}
+.chk input{width:18px;height:18px;accent-color:var(--gold-ink)}
+
+/* setup */
+.setup{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.setup{grid-template-columns:1fr}}
+.stack{display:grid;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row>*{flex:1 1 140px;min-width:0}
+.homelist{display:grid;gap:8px;margin-top:6px}
+.hrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.hrow .addr{font-weight:500}
+.hrow select{width:auto;padding:5px 8px;font-size:12.5px}
+.hrow .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--gold-soft);color:var(--gold-ink);white-space:nowrap}
+.pill.warn{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.status{font-size:12.5px;min-height:1.5em}
+
+/* day view */
+.dayhead{display:flex;gap:16px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.dayhead h2{font-size:26px}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.stats div{display:grid}
+.stats b{font-family:var(--f-head);font-weight:500;font-size:17px;color:var(--head)}
+.stats span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.daygrid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
+.daymapcol{display:none;position:sticky;top:76px;height:calc(100vh - 110px)}
+@media (min-width:1000px){.daygrid{grid-template-columns:minmax(0,1fr) minmax(0,.9fr)}.daymapcol{display:block}}
+
+.daymapcol .mapbox{height:100%}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.banner{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:10px;background:var(--gold-soft);margin-bottom:14px}
+.banner b{font-family:var(--f-head);font-weight:500}
+
+/* timeline */
+.tl{position:relative;display:grid;gap:0}
+.tl-item{display:grid;grid-template-columns:72px 28px minmax(0,1fr);gap:0 10px;align-items:start}
+.tl-time{font-variant-numeric:tabular-nums;text-align:right;font-size:13px;color:var(--head);padding-top:14px;line-height:1.3}
+.tl-time small{display:block;color:var(--muted);font-size:11.5px}
+.tl-rail{position:relative;align-self:stretch;display:flex;justify-content:center}
+.tl-rail::before{content:"";position:absolute;top:0;bottom:0;width:2px;background:var(--line)}
+.tl-item:first-child .tl-rail::before{top:18px}
+.tl-item:last-child .tl-rail::before{bottom:calc(100% - 18px)}
+.node{position:relative;z-index:1;margin-top:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff;background:var(--dc)}
+.node.flag{background:var(--card);border:2px solid var(--head);color:var(--head);width:16px;height:16px;margin-top:16px}
+.node.done{background:var(--ok)}
+.node.lunch{background:var(--gold);color:var(--on-gold)}
+.node.drive{width:10px;height:10px;margin-top:0;background:var(--card);border:2px solid var(--line);align-self:center}
+.tl-body{padding-block:8px;min-width:0}
+.drive-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;padding:2px 0;min-height:30px}
+.drive-row svg{flex:none}
+.drive-item .tl-time{padding-top:6px;font-size:11.5px;color:var(--muted)}
+.drive-item .tl-rail{align-items:center}
+.stop{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--dc);border-radius:10px;padding:12px 14px;cursor:pointer;display:grid;gap:6px}
+.stop:hover{border-color:var(--gold);border-left-color:var(--dc)}
+.stop.is-done{opacity:.62;border-left-color:var(--ok)}
+.stop.is-next{box-shadow:0 0 0 2px var(--gold)}
+.stop .a1{font-family:var(--f-head);font-size:17px;color:var(--head);line-height:1.25}
+.stop .a2{font-size:12.5px;color:var(--muted)}
+.facts{display:flex;gap:6px 12px;flex-wrap:wrap;font-size:12.5px;font-variant-numeric:tabular-nums}
+.facts b{font-weight:600}
+.agent{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
+.agent .who{flex:1 1 160px;min-width:0}
+.agent .who small{display:block;color:var(--muted);font-size:12px}
+.plain{background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:10px 14px}
+.plain .a1{font-family:var(--f-head);font-size:15px;color:var(--head)}
+.lunch-card{background:var(--gold-soft);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* reorder list */
+.olist{display:grid;gap:6px;margin:0 0 14px;padding:0;list-style:none}
+.olist li{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13.5px}
+.olist .grip{cursor:grab;color:var(--muted);padding:2px 4px;touch-action:none}
+.olist li.locked{opacity:.6}
+.olist li.locked .grip{cursor:not-allowed}
+.olist .num{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11.5px;font-weight:600;background:var(--dc);flex:none}
+.sortable-ghost{opacity:.35}
+
+/* map view */
+.mapview{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+@media (max-width:860px){.mapview{grid-template-columns:1fr}}
+.mapbox{height:min(68vh,640px);border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+.mapside{display:grid;gap:12px;align-content:start}
+.pin{width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.pin span{transform:rotate(45deg);color:#fff;font:600 12px var(--f-body)}
+.pin-se{width:22px;height:22px;border-radius:5px;background:#3a3a3a;border:2px solid #fff;display:grid;place-items:center;color:#fff;font:600 10px var(--f-body);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.leaflet-popup-content{font:13px/1.45 var(--f-body);margin:12px 14px}
+.leaflet-popup-content b{font-family:var(--f-head);font-weight:500;font-size:15px}
+.pop-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* detail sheet */
+dialog.sheet{border:0;padding:0;border-radius:14px;width:min(640px,calc(100% - 24px));max-height:calc(100% - 40px);background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
+.sheet-in{display:grid;gap:16px;padding:20px}
+.sheet-head{display:flex;gap:12px;justify-content:space-between;align-items:start}
+.sheet-head h3{font-size:22px}
+.close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
+.sec h4{margin:0 0 6px;font-family:var(--f-head);font-weight:500;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
+.sec ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.sec.concerns li::marker{color:var(--warn)}
+.qlist{list-style:none;padding:0!important}
+.qlist label{display:flex;gap:8px;align-items:start;cursor:pointer}
+.qlist input{margin-top:3px;accent-color:var(--gold-ink);width:16px;height:16px;flex:none}
+.qlist input:checked+span{text-decoration:line-through;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}.tl-item{grid-template-columns:62px 24px minmax(0,1fr);gap:0 6px}.tl-time{font-size:12px;white-space:nowrap}.tl-time small{font-size:11px}}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.note-sample{font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px}
+@media (prefers-reduced-motion:no-preference){.stop,.btn{transition:border-color .15s, box-shadow .15s}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>Valenne</b> · <span id="brandName">Tour Day Planner</span></div>
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- SETUP -->
+  <section class="view" id="view-setup">
+    <div class="setup">
+      <div class="stack">
+        <div class="card stack">
+          <div>
+            <div class="eyebrow">Step 1</div>
+            <h2 style="font-size:22px">Homes to tour</h2>
+          </div>
+          <label class="f">Paste Redfin links, one per line
+            <textarea id="links" rows="4" placeholder="https://www.redfin.com/CA/San-Diego/1234-Main-St-92126/home/12345678"></textarea>
+          </label>
+          <div class="row" style="align-items:center">
+            <button class="btn gold" id="addLinks" style="flex:0 0 auto">Add homes</button>
+            <div class="status muted" id="addStatus" style="flex:1 1 200px"></div>
+          </div>
+          <div>
+            <div class="row" style="align-items:center;justify-content:space-between">
+              <div class="muted small" id="homeCount" style="flex:1 1 auto"></div>
+              <button class="btn ghost small" id="loadSample" style="flex:0 0 auto">Load sample tour</button>
+              <button class="btn ghost small" id="clearAll" style="flex:0 0 auto">Remove all</button>
+            </div>
+            <div class="homelist" id="homelist"></div>
+          </div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="card stack">
+          <div>
+            <div class="eyebrow">Step 2</div>
+            <h2 style="font-size:22px">Trip details</h2>
+          </div>
+          <div class="row" style="align-items:center">
+            <div style="flex:0 0 auto" class="seg" id="daysSeg">
+              <button data-days="1">One day</button><button data-days="2">Two days</button>
+            </div>
+          </div>
+          <label class="f">Starting point
+            <div class="row" style="flex-wrap:nowrap">
+              <input type="text" id="startAddr" placeholder="Address or place">
+              <button class="btn small" id="setStart" style="flex:0 0 auto">Find</button>
+            </div>
+          </label>
+          <label class="chk"><input type="checkbox" id="sameEnd"> Return to the starting point</label>
+          <label class="f" id="endWrap">Return destination
+            <div class="row" style="flex-wrap:nowrap">
+              <input type="text" id="endAddr" placeholder="Address or place">
+              <button class="btn small" id="setEnd" style="flex:0 0 auto">Find</button>
+            </div>
+          </label>
+          <div class="status muted" id="placeStatus"></div>
+          <div id="dayTimes" class="stack"></div>
+        </div>
+        <div class="card stack">
+          <div>
+            <div class="eyebrow">Step 3</div>
+            <h2 style="font-size:22px">Timing</h2>
+          </div>
+          <div class="grid2">
+            <label class="f">Time at each home
+              <select id="showMin"><option>15</option><option>20</option><option>30</option><option>45</option><option>60</option></select>
+            </label>
+            <label class="f">Parking and walk-in buffer
+              <select id="buffer"><option value="0">None</option><option value="5">5 min</option><option value="10">10 min</option></select>
+            </label>
+            <label class="f">Traffic
+              <select id="traffic"><option value="1">Light</option><option value="1.25">Normal LA traffic</option><option value="1.5">Heavy</option></select>
+            </label>
+            <label class="f">Lunch length
+              <select id="lunchMin"><option value="0">No lunch</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hour</option></select>
+            </label>
+            <label class="f">Lunch around
+              <input type="time" id="lunchAt">
+            </label>
+          </div>
+          <p class="muted small" style="margin:0">Any change here re-plans the route right away.</p>
+          <button class="btn gold" id="goDay1">See the schedule</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DAY VIEWS -->
+  <section class="view" id="view-day" hidden>
+    <div class="dayhead">
+      <div>
+        <div class="eyebrow" id="dayEyebrow"></div>
+        <h2 id="dayTitle"></h2>
+      </div>
+      <div class="stats" id="dayStats"></div>
+    </div>
+    <div class="daygrid">
+      <div>
+        <div id="dayBanner"></div>
+        <div class="toolbar" id="dayToolbar"></div>
+        <ol class="olist" id="dayOrder" hidden></ol>
+        <div class="tl" id="timeline"></div>
+      </div>
+      <div class="daymapcol" id="dayMapCol"></div>
+    </div>
+  </section>
+
+  <!-- MAP -->
+  <section class="view" id="view-map" hidden>
+    <div class="mapview">
+      <div id="mapHome"><div class="mapbox" id="map"></div></div>
+      <div class="mapside">
+        <div class="seg" id="mapDaySeg"></div>
+        <div class="card stack" style="padding:14px">
+          <div class="eyebrow">Stop order</div>
+          <p class="muted small" style="margin:0">Drag a home to change the order. Tap a pin on the map to move a home to the other day.</p>
+          <ol class="olist" id="mapOrder" style="margin:0"></ol>
+          <div id="mapReopt"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog class="sheet" id="sheet"><div class="sheet-in" id="sheetIn"></div></dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script src="sample-data.js"></script>
+<script>
+(() => {
+"use strict";
+const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
+const KEY = "valenne-tour-planner-v1" + (TOUR ? ":" + TOUR : "");
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+/* ---------- state ---------- */
+function defaults() {
+  return {
+    settings: { days: 2, start: null, sameEnd: true, end: null, dayStart: ["10:00", "10:00"], dates: ["", ""],
+      showMin: 30, buffer: 5, traffic: 1.25, lunchMin: 45, lunchAt: "12:30" },
+    homes: [], manual: { 1: null, 2: null }, assign: {}, tab: "setup", mapDay: 0
+  };
+}
+function stateFrom(T) {
+  const s = defaults(), st = s.settings;
+  st.start = { ...T.start };
+  if (T.end) { st.end = { ...T.end }; st.sameEnd = false; }
+  if (T.days) st.days = T.days;
+  if (T.dates) st.dates = T.dates;
+  if (T.dayStart) st.dayStart = T.dayStart;
+  s.homes = T.homes.map(h => ({ id: uid(), pin: 0, done: false, doneAt: null, notes: "", asked: [], ...h }));
+  s.tourName = T.name || "";
+  return s;
+}
+function sampleState() { const s = stateFrom(SAMPLE_TOUR); s.isSample = true; return s; }
+let TOUR_DATA = null;
+async function loadTourFile() {
+  if (!TOUR) return null;
+  try { const r = await fetch(`tours/${TOUR}.json`, { cache: "no-store" }); if (r.ok) return await r.json(); } catch (e) {}
+  return null;
+}
+const freshState = () => TOUR_DATA ? stateFrom(TOUR_DATA) : sampleState();
+let S;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- time helpers ---------- */
+const toMin = t => { const [h, m] = (t || "10:00").split(":").map(Number); return h * 60 + m; };
+const fmt = m => { m = Math.round(m); let h = Math.floor(m / 60) % 24, mm = m % 60; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(mm).padStart(2, "0")} ${ap}`; };
+const dur = m => { m = Math.round(m); const h = Math.floor(m / 60), mm = m % 60; return h ? `${h}h ${String(mm).padStart(2, "0")}m` : `${mm} min`; };
+const money = n => n ? "$" + Number(n).toLocaleString("en-US") : "";
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+const isLive = day => S.settings.dates[day - 1] && S.settings.dates[day - 1] === todayISO();
+
+/* ---------- travel times (OSRM, with straight-line fallback) ---------- */
+const travel = {}; // "lat,lng|lat,lng" -> {s: seconds, m: meters}
+const pk = p => `${(+p.lat).toFixed(5)},${(+p.lng).toFixed(5)}`;
+function hav(a, b) { const R = 6371000, r = x => x * Math.PI / 180; const dLa = r(b.lat - a.lat), dLo = r(b.lng - a.lng); const x = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); }
+let usingFallback = false;
+async function loadMatrix(points) {
+  const uniq = [...new Map(points.map(p => [pk(p), p])).values()];
+  const missing = uniq.some(a => uniq.some(b => pk(a) !== pk(b) && !travel[pk(a) + "|" + pk(b)]));
+  if (!missing || uniq.length < 2) return;
+  try {
+    const coords = uniq.map(p => `${(+p.lng).toFixed(5)},${(+p.lat).toFixed(5)}`).join(";");
+    const r = await fetch(`https://router.project-osrm.org/table/v1/driving/${coords}?annotations=duration,distance`);
+    const j = await r.json();
+    if (j.code !== "Ok") throw new Error(j.code);
+    uniq.forEach((a, i) => uniq.forEach((b, k) => { travel[pk(a) + "|" + pk(b)] = { s: j.durations[i][k], m: j.distances[i][k] }; }));
+    usingFallback = false;
+  } catch (e) {
+    usingFallback = true;
+    uniq.forEach(a => uniq.forEach(b => { const d = hav(a, b) * 1.35; travel[pk(a) + "|" + pk(b)] = { s: d / 15.6, m: d }; }));
+  }
+}
+function leg(a, b) {
+  if (pk(a) === pk(b)) return { min: 0, mi: 0 };
+  let t = travel[pk(a) + "|" + pk(b)];
+  if (!t) { const d = hav(a, b) * 1.35; t = { s: d / 15.6, m: d }; }
+  return { min: (t.s / 60) * S.settings.traffic, mi: t.m / 1609.34 };
+}
+
+/* ---------- route optimization ---------- */
+function routeCost(start, end, seq) { let c = 0, p = start; for (const h of seq) { c += leg(p, h).min; p = h; } return c + leg(p, end).min; }
+function permute(arr) { if (arr.length <= 1) return [arr]; const out = []; arr.forEach((x, i) => permute([...arr.slice(0, i), ...arr.slice(i + 1)]).forEach(p => out.push([x, ...p]))); return out; }
+function solve(start, end, homes, exact = true) {
+  if (homes.length <= 1) return homes.slice();
+  if (exact && homes.length <= 7) {
+    let best = null, bc = Infinity;
+    for (const p of permute(homes)) { const c = routeCost(start, end, p); if (c < bc) { bc = c; best = p; } }
+    return best;
+  }
+  // nearest neighbor, then 2-opt
+  let left = homes.slice(), seq = [], p = start;
+  while (left.length) { left.sort((a, b) => leg(p, a).min - leg(p, b).min); p = left.shift(); seq.push(p); }
+  let improved = true, bc = routeCost(start, end, seq);
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < seq.length - 1; i++) for (let k = i + 1; k < seq.length; k++) {
+      const cand = [...seq.slice(0, i), ...seq.slice(i, k + 1).reverse(), ...seq.slice(k + 1)];
+      const c = routeCost(start, end, cand);
+      if (c + 0.01 < bc) { seq = cand; bc = c; improved = true; }
+    }
+  }
+  return seq;
+}
+const endPoint = () => S.settings.sameEnd ? S.settings.start : (S.settings.end || S.settings.start);
+const stopMin = h => (h.showMin || S.settings.showMin) + S.settings.buffer;
+
+function assignDays() {
+  const st = S.settings, homes = S.homes.filter(h => h.lat != null);
+  const res = new Map();
+  if (st.days === 1) { homes.forEach(h => res.set(h.id, 1)); return res; }
+  const anyDone = homes.some(h => h.done);
+  const fixed = [], free = [];
+  homes.forEach(h => {
+    const d = h.done ? h.doneDay : h.pin || (anyDone ? S.assign[h.id] : 0);
+    if (d) { res.set(h.id, d); fixed.push(h); } else free.push(h);
+  });
+  if (!free.length) return res;
+  const A = st.start, B = endPoint();
+  const base1 = fixed.filter(h => res.get(h.id) === 1), base2 = fixed.filter(h => res.get(h.id) === 2);
+  const score = (g1, g2) => {
+    const c1 = g1.length ? routeCost(A, B, solve(A, B, g1, false)) : 0, c2 = g2.length ? routeCost(A, B, solve(A, B, g2, false)) : 0;
+    const t1 = c1 + g1.reduce((s, h) => s + stopMin(h), 0), t2 = c2 + g2.reduce((s, h) => s + stopMin(h), 0);
+    return c1 + c2 + 0.6 * Math.abs(t1 - t2) + (g1.length && g2.length ? 0 : 600);
+  };
+  let best = null, bs = Infinity;
+  if (free.length <= 12) {
+    const n = free.length;
+    for (let mask = 0; mask < (1 << n); mask++) {
+      const g1 = [...base1], g2 = [...base2];
+      free.forEach((h, i) => (mask >> i & 1 ? g2 : g1).push(h));
+      const s = score(g1, g2); if (s < bs) { bs = s; best = mask; }
+    }
+    free.forEach((h, i) => res.set(h.id, best >> i & 1 ? 2 : 1));
+  } else {
+    const tour = solve(A, B, free, false);
+    let bk = 1;
+    for (let k = 1; k < tour.length; k++) { const s = score([...base1, ...tour.slice(0, k)], [...base2, ...tour.slice(k)]); if (s < bs) { bs = s; bk = k; } }
+    tour.forEach((h, i) => res.set(h.id, i < bk ? 1 : 2));
+  }
+  return res;
+}
+
+function dayOrder(day, assignment) {
+  const A = S.settings.start, B = endPoint();
+  const hs = S.homes.filter(h => h.lat != null && assignment.get(h.id) === day);
+  const done = hs.filter(h => h.done).sort((a, b) => (a.doneSeq || 0) - (b.doneSeq || 0));
+  const rest = hs.filter(h => !h.done);
+  const from = done.length ? done[done.length - 1] : A;
+  let order;
+  const man = S.manual[day];
+  if (man) {
+    const byId = new Map(rest.map(h => [h.id, h]));
+    order = man.map(id => byId.get(id)).filter(Boolean);
+    const extra = rest.filter(h => !man.includes(h.id));
+    order = [...order, ...extra];
+  } else order = solve(from, B, rest);
+  return [...done, ...order];
+}
+
+/* ---------- schedule ---------- */
+function buildDay(day, order) {
+  const st = S.settings, A = st.start, B = endPoint();
+  const live = isLive(day);
+  const items = [];
+  // pass 1: times without lunch, to find the best lunch slot
+  const sim = (lunchAfter) => {
+    const out = []; let t = toMin(st.dayStart[day - 1]), p = A, firstOpen = true, lunchDone = false;
+    out.push({ type: "start", t, place: A });
+    order.forEach((h, i) => {
+      const lg = leg(p, h);
+      if (live && !h.done && firstOpen) { t = Math.max(t, nowMin()); firstOpen = false; }
+      out.push({ type: "drive", t, min: lg.min, mi: lg.mi, from: p, to: h });
+      const arrive = t + lg.min + st.buffer;
+      let leave = arrive + (h.showMin || st.showMin);
+      if (h.done && live && h.doneMin != null) leave = h.doneMin;
+      out.push({ type: "stop", h, idx: i, arrive, leave, t: arrive });
+      t = leave; p = h;
+      if (lunchAfter === i && st.lunchMin > 0) { out.push({ type: "lunch", t, end: t + st.lunchMin, lastCity: h.area || h.city }); t += st.lunchMin; lunchDone = true; }
+    });
+    const lg = leg(p, B);
+    out.push({ type: "drive", t, min: lg.min, mi: lg.mi, from: p, to: B });
+    out.push({ type: "end", t: t + lg.min, place: B });
+    return out;
+  };
+  let lunchAfter = -1;
+  if (st.lunchMin > 0 && order.length) {
+    const base = sim(-1), target = toMin(st.lunchAt);
+    // only plan lunch when the tour is still going at lunchtime
+    if (base[base.length - 1].t < target - 30) return sim(-1);
+    let bestD = Infinity;
+    base.filter(x => x.type === "stop").forEach(x => {
+      const d = Math.abs(x.leave - target);
+      if (d < bestD) { bestD = d; lunchAfter = x.idx; }
+    });
+  }
+  return sim(lunchAfter);
+}
+
+let PLAN = { 1: null, 2: null };
+async function recompute() {
+  const st = S.settings;
+  if (!st.start) { PLAN = { 1: null, 2: null }; render(); return; }
+  const pts = [st.start, endPoint(), ...S.homes.filter(h => h.lat != null)];
+  await loadMatrix(pts);
+  const assignment = assignDays();
+  assignment.forEach((d, id) => S.assign[id] = d);
+  for (const d of [1, 2]) {
+    if (d > st.days) { PLAN[d] = null; continue; }
+    const order = dayOrder(d, assignment);
+    PLAN[d] = { order, items: buildDay(d, order) };
+  }
+  save(); render();
+}
+let rt; const replan = () => { clearTimeout(rt); rt = setTimeout(recompute, 60); };
+
+/* ---------- Redfin links ---------- */
+function parseRedfin(url) {
+  const m = url.match(/redfin\.com\/([A-Z]{2})\/([^/]+)\/([^/]+)(?:\/unit-([^/]+))?\/home\/(\d+)/i);
+  if (!m) return null;
+  const [, state, citySlug, addrSlug, unit] = m;
+  const parts = addrSlug.split("-"); let zip = "";
+  if (/^\d{5}$/.test(parts[parts.length - 1])) zip = parts.pop();
+  let address = parts.join(" ");
+  if (unit) address += ` #${unit.replace(/-/g, " ")}`;
+  return { url: url.split("?")[0], state: state.toUpperCase(), city: citySlug.replace(/-/g, " "), zip, address };
+}
+async function geocode(q) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(q)}`);
+    const j = await r.json();
+    if (j[0]) return { lat: +j[0].lat, lng: +j[0].lon, label: j[0].display_name };
+  } catch (e) {}
+  try {
+    const r = await fetch(`https://photon.komoot.io/api/?limit=1&lat=34&lon=-118&q=${encodeURIComponent(q)}`);
+    const j = await r.json(); const f = j.features && j.features[0];
+    if (f && f.properties.countrycode === "US") return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label: q };
+  } catch (e) {}
+  return null;
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function addLinks() {
+  const lines = $("#links").value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+  if (!lines.length) { $("#addStatus").textContent = "Paste at least one Redfin link."; return; }
+  if (S.isSample) { S.homes = []; S.manual = { 1: null, 2: null }; S.assign = {}; S.isSample = false; }
+  let added = 0, bad = [], noLoc = [];
+  for (const [i, line] of lines.entries()) {
+    const p = parseRedfin(line);
+    if (!p) { bad.push(line); continue; }
+    if (S.homes.some(h => h.url === p.url)) continue;
+    $("#addStatus").textContent = `Finding ${p.address} (${i + 1} of ${lines.length})...`;
+    const g = await geocode(`${p.address.replace(/ #.*/, "")}, ${p.city}, ${p.state} ${p.zip}`);
+    if (!g) noLoc.push(p.address);
+    S.homes.push({ id: uid(), pin: 0, done: false, notes: "", asked: [], ...p, lat: g ? g.lat : null, lng: g ? g.lng : null,
+      agent: "", phone: "", contact: "", showing: "", summary: "", highlights: [], concerns: [], questions: [] });
+    added++;
+    await sleep(1000); // geocoder asks for 1 request per second
+  }
+  $("#links").value = "";
+  let msg = `Added ${added} home${added === 1 ? "" : "s"}.`;
+  if (bad.length) msg += ` ${bad.length} link${bad.length === 1 ? " wasn't" : "s weren't"} a Redfin home link.`;
+  if (noLoc.length) msg += ` Couldn't place on the map: ${noLoc.join(", ")}.`;
+  $("#addStatus").textContent = msg;
+  S.manual = { 1: null, 2: null };
+  replan();
+}
+
+/* ---------- rendering ---------- */
+const dayColor = d => d === 2 ? "var(--d2)" : "var(--d1)";
+const dayHex = d => getComputedStyle(document.documentElement).getPropertyValue(d === 2 ? "--d2" : "--d1").trim();
+const telDigits = p => (p || "").replace(/\D/g, "");
+const prettyPhone = p => { const d = telDigits(p).replace(/^1/, ""); return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : p; };
+const carIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14M6 17v2M18 17v2M4 13l2-6h12l2 6v4H4z"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>`;
+const fullAddr = h => `${h.address}, ${h.city}${h.zip ? " " + h.zip : ""}`;
+const shortPlace = p => p ? (p.label || "").split(",").slice(0, 2).join(",") : "";
+
+function smsLink(h, day, time) {
+  const first = (h.contact || h.agent || "").split(/[ (]/)[0];
+  const date = S.settings.dates[day - 1] ? new Date(S.settings.dates[day - 1] + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "our tour day";
+  const body = `Hi ${first || "there"}, this is Ani Valenne with Keller Williams. I'd like to show ${h.address} on ${date} around ${time}. Does that work?`;
+  return `sms:${telDigits(h.phone)}?&body=${encodeURIComponent(body)}`;
+}
+
+function renderTabs() {
+  const tabs = [["setup", "Setup"], ["day1", "Day 1"]];
+  if (S.settings.days === 2) tabs.push(["day2", "Day 2"]);
+  tabs.push(["map", "Map"]);
+  if (S.tab === "day2" && S.settings.days === 1) S.tab = "day1";
+  $("#tabs").innerHTML = tabs.map(([k, l]) => {
+    const dot = k.startsWith("day") ? `<span class="dot" style="background:${dayColor(+k[3])}"></span>` : "";
+    return `<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${dot}${l}</button>`;
+  }).join("");
+}
+
+function renderSetup() {
+  const st = S.settings;
+  document.querySelectorAll("#daysSeg button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.days === st.days));
+  if (document.activeElement !== $("#startAddr")) $("#startAddr").value = st.start ? st.start.label : "";
+  if (document.activeElement !== $("#endAddr")) $("#endAddr").value = st.end ? st.end.label : "";
+  $("#sameEnd").checked = st.sameEnd; $("#endWrap").hidden = st.sameEnd;
+  $("#showMin").value = st.showMin; $("#buffer").value = st.buffer; $("#traffic").value = st.traffic;
+  $("#lunchMin").value = st.lunchMin; $("#lunchAt").value = st.lunchAt;
+  const dt = $("#dayTimes");
+  if (!dt.contains(document.activeElement)) {
+    dt.innerHTML = [1, 2].slice(0, st.days).map(d => `
+      <div class="grid2">
+        <label class="f"><span><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dayColor(d)};margin-right:6px"></span>Day ${d} date (optional)</span><input type="date" data-date="${d}" value="${st.dates[d - 1] || ""}"></label>
+        <label class="f">Day ${d} start time<input type="time" data-start="${d}" value="${st.dayStart[d - 1]}"></label>
+      </div>`).join("");
+  }
+  const n = S.homes.length;
+  $("#homeCount").textContent = n ? `${n} home${n === 1 ? "" : "s"}${S.isSample ? " (sample tour: add your own links to replace it)" : ""}` : "No homes yet.";
+  $("#homelist").innerHTML = S.homes.map(h => {
+    const d = S.assign[h.id];
+    const daySel = st.days === 2 ? `<select data-pin="${h.id}" aria-label="Day for ${esc(h.address)}" ${h.done ? "disabled" : ""}>
+        <option value="0" ${!h.pin ? "selected" : ""}>Auto${!h.pin && d ? ` (Day ${d})` : ""}</option>
+        <option value="1" ${h.pin === 1 ? "selected" : ""}>Day 1</option><option value="2" ${h.pin === 2 ? "selected" : ""}>Day 2</option></select>` : "<span></span>";
+    const flag = h.lat == null ? `<span class="pill warn">Not on map</span>` : h.done ? `<span class="pill ok">Done</span>` : "";
+    return `<div class="hrow">
+      <span class="num" style="width:10px;height:10px;border-radius:50%;background:${d ? dayColor(d) : "var(--line)"}"></span>
+      <div style="min-width:0"><div class="addr">${esc(h.address)} ${flag}</div><div class="muted small">${esc(h.city)}${h.price ? " · " + money(h.price) : ""}</div></div>
+      ${daySel}
+      <button class="x" data-remove="${h.id}" aria-label="Remove ${esc(h.address)}">×</button>
+    </div>`;
+  }).join("");
+}
+
+function dayStats(plan) {
+  const stops = plan.items.filter(x => x.type === "stop"), drives = plan.items.filter(x => x.type === "drive");
+  const start = plan.items[0].t, end = plan.items[plan.items.length - 1].t;
+  const drv = drives.reduce((s, x) => s + x.min, 0), mi = drives.reduce((s, x) => s + x.mi, 0);
+  return { stops: stops.length, start, end, drv, mi, done: stops.filter(x => x.h.done).length };
+}
+
+function renderDay(day) {
+  const plan = PLAN[day], st = S.settings;
+  $("#view-day").style.setProperty("--dc", dayColor(day));
+  $("#dayEyebrow").textContent = st.dates[day - 1] ? new Date(st.dates[day - 1] + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : `Day ${day}`;
+  $("#dayTitle").textContent = `Day ${day} tour`;
+  if (!st.start) { $("#timeline").innerHTML = `<div class="empty">Add a starting point on the Setup tab to build the schedule.</div>`; $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = ""; return; }
+  if (!plan || !plan.order.length) { $("#timeline").innerHTML = `<div class="empty">No homes on this day yet.</div>`; $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = ""; return; }
+  const s = dayStats(plan);
+  $("#dayStats").innerHTML = `
+    <div><b>${s.stops}</b><span>Homes</span></div>
+    <div><b>${fmt(s.start)} – ${fmt(s.end)}</b><span>Day</span></div>
+    <div><b>${dur(s.drv)}</b><span>Driving · ${Math.round(s.mi)} mi</span></div>
+    <div><b>${s.done}/${s.stops}</b><span>Done</span></div>`;
+  const next = plan.items.find(x => x.type === "stop" && !x.h.done);
+  const live = isLive(day);
+  if (next) {
+    const drive = plan.items[plan.items.indexOf(next) - 1];
+    $("#dayBanner").innerHTML = `<div class="banner"><div style="flex:1;min-width:0"><div class="eyebrow">${s.done ? "Next up" : "First stop"}</div>
+      <b>${esc(next.h.address)}</b> <span class="muted">· arrive ${fmt(next.arrive)}</span>
+      <div class="small muted">Leave by ${fmt(drive.t)} · ${dur(drive.min)} drive${live ? " · times update live as you check homes off" : ""}</div></div>
+      <a class="btn small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(next.h))}">Directions</a></div>`;
+  } else $("#dayBanner").innerHTML = `<div class="banner"><b>All homes done.</b> <span class="muted">Head back: ${esc(shortPlace(endPoint()))}</span></div>`;
+  const manual = !!S.manual[day];
+  $("#dayToolbar").innerHTML = `
+    <button class="btn small" id="toggleOrder">${$("#dayOrder").hidden ? "Change order" : "Done reordering"}</button>
+    ${manual ? `<span class="pill">Your order</span><button class="btn ghost small" data-reopt="${day}">Re-optimize</button>` : `<span class="pill ok">Fastest route</span>`}
+    ${st.days === 2 ? `<span class="muted small">Move homes between days from any home's details.</span>` : ""}
+    ${usingFallback ? `<span class="pill warn">Drive times estimated (offline)</span>` : ""}`;
+  renderOrderList($("#dayOrder"), day);
+  $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("");
+}
+
+function tlItem(x, day, next) {
+  if (x.type === "start" || x.type === "end") {
+    return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node flag"></span></div>
+      <div class="tl-body"><div class="plain"><div class="eyebrow">${x.type === "start" ? "Start" : "Back"}</div><div class="a1">${esc(shortPlace(x.place))}</div></div></div></div>`;
+  }
+  if (x.type === "drive") {
+    if (x.min < 0.5) return "";
+    return `<div class="tl-item drive-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node drive"></span></div>
+      <div class="tl-body" style="padding-block:2px"><div class="drive-row">${carIcon}<span>${dur(x.min)} drive · ${x.mi.toFixed(1)} mi</span></div></div></div>`;
+  }
+  if (x.type === "lunch") {
+    return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}<small>${fmt(x.end)}</small></div><div class="tl-rail"><span class="node lunch">L</span></div>
+      <div class="tl-body"><div class="lunch-card"><div><div class="eyebrow">Lunch break</div><div>${dur(x.end - x.t)} near ${esc(x.lastCity || "the last home")}</div></div></div></div></div>`;
+  }
+  const h = x.h, isNext = next && next.h.id === h.id;
+  const tm = fmt(x.arrive);
+  const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : ""].filter(Boolean).join("<span class='muted'>·</span>");
+  const phone = telDigits(h.phone);
+  const agentLine = (h.agent || h.contact) ? `<div class="agent">
+      <div class="who">${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}${phone ? ` · ${prettyPhone(h.phone)}` : ""}
+        <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
+      ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : `<span class="pill warn">No phone yet</span>`}
+    </div>` : `<div class="agent"><span class="pill warn">Agent not added yet</span></div>`;
+  return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
+    <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
+    <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:start">
+        <div style="min-width:0"><div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
+        ${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}
+      </div>
+      ${facts ? `<div class="facts">${facts}</div>` : ""}
+      ${agentLine}
+    </div></div></div>`;
+}
+
+function renderOrderList(el, day) {
+  const plan = PLAN[day];
+  if (!plan) { el.innerHTML = ""; return; }
+  el.style.setProperty("--dc", dayColor(day));
+  el.innerHTML = plan.order.map((h, i) => `<li data-id="${h.id}" class="${h.done ? "locked" : ""}">
+    <span class="grip" aria-hidden="true">⠿</span><span class="num" style="background:${h.done ? "var(--ok)" : dayColor(day)}">${h.done ? "✓" : i + 1}</span>
+    <span style="flex:1;min-width:0">${esc(h.address)} <span class="muted small">${esc(h.city)}</span></span></li>`).join("");
+  if (el._sortable) el._sortable.destroy();
+  el._sortable = Sortable.create(el, {
+    handle: ".grip", filter: ".locked", animation: 150, onMove: e => !e.related.classList.contains("locked"),
+    onEnd: () => {
+      const ids = [...el.children].map(li => li.dataset.id);
+      S.manual[day] = ids.filter(id => !S.homes.find(h => h.id === id).done);
+      replan();
+    }
+  });
+}
+
+/* ---------- map ---------- */
+let map, layer;
+function ensureMap() {
+  if (map) return;
+  map = L.map("map", { zoomControl: true });
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+  layer = L.layerGroup().addTo(map);
+  map.setView([34.05, -118.4], 9);
+}
+const routeCache = {};
+async function routeLine(points) {
+  const key = points.map(pk).join(";");
+  if (routeCache[key]) return routeCache[key];
+  try {
+    const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${points.map(p => `${(+p.lng).toFixed(5)},${(+p.lat).toFixed(5)}`).join(";")}?overview=full&geometries=geojson`);
+    const j = await r.json();
+    if (j.code === "Ok") return routeCache[key] = j.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  } catch (e) {}
+  return points.map(p => [p.lat, p.lng]);
+}
+let mapToken = 0;
+async function drawMap(onlyDay) {
+  ensureMap();
+  const tok = ++mapToken;
+  layer.clearLayers();
+  const st = S.settings; if (!st.start) return;
+  const bounds = [];
+  const se = (p, t) => { if (!p) return; L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="pin-se">${t}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] }) }).bindPopup(`<b>${t === "S" ? "Start" : "Return"}</b><br>${esc(p.label)}`).addTo(layer); bounds.push([p.lat, p.lng]); };
+  se(st.start, "S"); if (!st.sameEnd && st.end) se(st.end, "E");
+  for (const d of [1, 2]) {
+    const plan = PLAN[d]; if (!plan || (onlyDay && onlyDay !== d)) continue;
+    const col = dayHex(d);
+    const pts = [st.start, ...plan.order, endPoint()];
+    routeLine(pts).then(line => { if (tok !== mapToken) return; L.polyline(line, { color: col, weight: 4, opacity: .8 }).addTo(layer).bringToBack(); });
+    plan.items.filter(x => x.type === "stop").forEach(x => {
+      const h = x.h;
+      const m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: "", html: `<div class="pin" style="background:${h.done ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim() : col}"><span>${h.done ? "✓" : x.idx + 1}</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26] }) });
+      const other = d === 1 ? 2 : 1;
+      m.bindPopup(`<b>${esc(h.address)}</b><br><span style="color:var(--muted)">Day ${d} · ${fmt(x.arrive)} – ${fmt(x.leave)}</span>
+        <div class="pop-actions"><button class="btn small gold" data-open="${h.id}">Details</button>
+        ${st.days === 2 && !h.done ? `<button class="btn small" data-move="${h.id}" data-to="${other}">Move to Day ${other}</button>` : ""}</div>`);
+      m.addTo(layer); bounds.push([h.lat, h.lng]);
+    });
+  }
+  map.invalidateSize();
+  if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+}
+function placeMap(where) {
+  const box = $("#map");
+  const target = where === "day" ? $("#dayMapCol") : $("#mapHome");
+  if (box.parentElement !== target) target.appendChild(box);
+  ensureMap(); map.invalidateSize();
+}
+
+function renderMapView() {
+  const st = S.settings;
+  if (st.days === 1) S.mapDay = 1;
+  const opts = st.days === 2 ? [[0, "Both days"], [1, "Day 1"], [2, "Day 2"]] : [[1, "Day 1"]];
+  $("#mapDaySeg").innerHTML = opts.map(([v, l]) => `<button data-mapday="${v}" aria-pressed="${S.mapDay === v}">${l}</button>`).join("");
+  const days = S.mapDay ? [S.mapDay] : [1, 2].slice(0, st.days);
+  $("#mapOrder").innerHTML = "";
+  const ol = $("#mapOrder");
+  if (days.length === 1) { renderOrderList(ol, days[0]); $("#mapReopt").innerHTML = S.manual[days[0]] ? `<button class="btn small" data-reopt="${days[0]}">Re-optimize Day ${days[0]}</button>` : `<span class="pill ok">Fastest route</span>`; }
+  else { ol.innerHTML = `<li class="muted small" style="border-style:dashed">Pick Day 1 or Day 2 above to drag homes into a new order.</li>`; $("#mapReopt").innerHTML = ""; }
+}
+
+/* ---------- detail sheet ---------- */
+function openSheet(id) {
+  const h = S.homes.find(x => x.id === id); if (!h) return;
+  const day = S.assign[h.id] || 1, plan = PLAN[day];
+  const it = plan && plan.items.find(x => x.type === "stop" && x.h.id === id);
+  const tm = it ? fmt(it.arrive) : "";
+  const phone = telDigits(h.phone);
+  const list = (arr, cls) => arr && arr.length ? `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="muted small" style="margin:0">Not filled in yet.</p>`;
+  const filled = h.summary || (h.highlights || []).length;
+  $("#sheetIn").innerHTML = `
+    <div class="sheet-head"><div style="min-width:0"><div class="eyebrow" style="color:${dayColor(day)}">Day ${day}${it ? ` · ${fmt(it.arrive)} – ${fmt(it.leave)}` : ""}</div>
+      <h3>${esc(h.address)}</h3><div class="muted">${esc(fullAddr(h).replace(h.address + ", ", ""))}</div></div>
+      <button class="close" data-close aria-label="Close">×</button></div>
+    <div class="facts" style="font-size:14px">${[h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : ""].filter(Boolean).join(" · ")}</div>
+    <div class="actions">
+      ${h.done ? `<button class="btn" data-undone="${h.id}">Undo done</button>` : `<button class="btn gold" data-done="${h.id}">Mark as visited</button>`}
+      <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on Redfin</a>
+      <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(h))}">Directions</a>
+      ${S.settings.days === 2 && !h.done ? `<button class="btn" data-move="${h.id}" data-to="${day === 1 ? 2 : 1}">Move to Day ${day === 1 ? 2 : 1}</button>` : ""}
+    </div>
+    ${!filled ? `<div class="note-sample">Summary, concerns and questions aren't filled in for this home yet. Send the Redfin links to Claude and ask to fill in the tour app.</div>` : ""}
+    ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
+    <div class="sec"><h4>Key things</h4>${list(h.highlights)}</div>
+    <div class="sec concerns"><h4>Concerns</h4>${list(h.concerns)}</div>
+    <div class="sec"><h4>Questions to ask</h4>${h.questions && h.questions.length ? `<ul class="qlist">${h.questions.map((q, i) => `<li><label><input type="checkbox" data-ask="${h.id}" data-q="${i}" ${(h.asked || []).includes(i) ? "checked" : ""}><span>${esc(q)}</span></label></li>`).join("")}</ul>` : `<p class="muted small" style="margin:0">Not filled in yet.</p>`}</div>
+    <div class="sec"><h4>Listing agent</h4>
+      <div class="grid2">
+        <label class="f">Agent name<input type="text" data-field="agent" data-id="${h.id}" value="${esc(h.agent)}"></label>
+        <label class="f">Phone for showings<input type="text" data-field="phone" data-id="${h.id}" value="${esc(prettyPhone(h.phone))}" inputmode="tel"></label>
+      </div>
+      ${h.showing ? `<p class="muted small" style="margin:8px 0 0">${esc(h.showing)}</p>` : ""}
+      ${phone ? `<div class="actions" style="margin-top:10px"><a class="btn gold small" href="${smsLink(h, day, tm)}">Text ${esc((h.contact || h.agent).split(/[ (]/)[0])}</a><a class="btn small" href="tel:${phone}">Call</a></div>` : ""}
+    </div>
+    <div class="grid2">
+      <label class="f">Minutes at this home<select data-field="showMin" data-id="${h.id}">${[15, 20, 30, 45, 60, 90].map(v => `<option ${((h.showMin || S.settings.showMin) == v) ? "selected" : ""}>${v}</option>`).join("")}</select></label>
+      ${S.settings.days === 2 ? `<label class="f">Day<select data-field="pin" data-id="${h.id}" ${h.done ? "disabled" : ""}><option value="0" ${!h.pin ? "selected" : ""}>Auto</option><option value="1" ${h.pin === 1 ? "selected" : ""}>Day 1</option><option value="2" ${h.pin === 2 ? "selected" : ""}>Day 2</option></select></label>` : ""}
+    </div>
+    <label class="f">Our notes from the visit<textarea rows="3" data-field="notes" data-id="${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes)}</textarea></label>`;
+  const dlg = $("#sheet"); if (!dlg.open) dlg.showModal();
+}
+
+/* ---------- main render ---------- */
+function render() {
+  renderTabs();
+  $("#brandName").textContent = S.tourName || "Tour Day Planner";
+  const t = S.tab;
+  $("#view-setup").hidden = t !== "setup";
+  $("#view-day").hidden = !t.startsWith("day");
+  $("#view-map").hidden = t !== "map";
+  renderSetup();
+  if (t.startsWith("day")) { renderDay(+t[3]); if (innerWidth >= 1000) { placeMap("day"); drawMap(+t[3]); } }
+  if (t === "map") { renderMapView(); placeMap("map"); drawMap(S.mapDay || 0); }
+  if ($("#sheet").open && $("#sheet").dataset.id) { /* keep sheet as is */ }
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop]");
+  if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
+  if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
+  if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
+  if (t.dataset.days) { S.settings.days = +t.dataset.days; S.manual = { 1: null, 2: null }; replan(); return; }
+  if (t.dataset.mapday != null) { S.mapDay = +t.dataset.mapday; save(); render(); return; }
+  if (t.id === "toggleOrder") { $("#dayOrder").hidden = !$("#dayOrder").hidden; render(); return; }
+  if (t.dataset.close != null) { $("#sheet").close(); return; }
+  if (t.dataset.open) { openSheet(t.dataset.open); return; }
+  if (t.dataset.reopt) { S.manual[+t.dataset.reopt] = null; replan(); return; }
+  if (t.dataset.remove) { S.homes = S.homes.filter(h => h.id !== t.dataset.remove); delete S.assign[t.dataset.remove]; replan(); return; }
+  const h = S.homes.find(x => x.id === (t.dataset.done || t.dataset.undone || t.dataset.move));
+  if (!h) return;
+  if (t.dataset.done) {
+    const day = S.assign[h.id] || 1;
+    h.done = true; h.doneDay = day; h.doneSeq = Date.now();
+    h.doneMin = isLive(day) ? nowMin() : null;
+    if (S.manual[day]) S.manual[day] = S.manual[day].filter(id => id !== h.id);
+    $("#sheet").close(); await recompute(); return;
+  }
+  if (t.dataset.undone) { h.done = false; h.doneDay = null; h.doneMin = null; await recompute(); openSheet(h.id); return; }
+  if (t.dataset.move) {
+    h.pin = +t.dataset.to; S.manual = { 1: null, 2: null };
+    map && map.closePopup(); await recompute(); if ($("#sheet").open) openSheet(h.id); return;
+  }
+});
+document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches(".stop[data-open]")) { e.preventDefault(); openSheet(e.target.dataset.open); } });
+
+document.addEventListener("change", e => {
+  const el = e.target, st = S.settings;
+  if (el.dataset.pin) { const h = S.homes.find(x => x.id === el.dataset.pin); h.pin = +el.value; S.manual = { 1: null, 2: null }; replan(); return; }
+  if (el.dataset.date) { st.dates[el.dataset.date - 1] = el.value; replan(); return; }
+  if (el.dataset.start) { st.dayStart[el.dataset.start - 1] = el.value || "10:00"; replan(); return; }
+  if (el.dataset.ask) { const h = S.homes.find(x => x.id === el.dataset.ask), q = +el.dataset.q; h.asked = h.asked || []; h.asked = el.checked ? [...h.asked, q] : h.asked.filter(x => x !== q); save(); return; }
+  if (el.dataset.field) {
+    const h = S.homes.find(x => x.id === el.dataset.id), f = el.dataset.field;
+    if (f === "showMin") h.showMin = +el.value;
+    else if (f === "pin") { h.pin = +el.value; S.manual = { 1: null, 2: null }; }
+    else h[f] = f === "phone" ? telDigits(el.value) : el.value;
+    if (f === "agent" && !h.contact) h.contact = el.value;
+    replan(); return;
+  }
+  const map2 = { showMin: v => st.showMin = +v, buffer: v => st.buffer = +v, traffic: v => st.traffic = +v, lunchMin: v => st.lunchMin = +v, lunchAt: v => st.lunchAt = v || "12:30" };
+  if (map2[el.id]) { map2[el.id](el.value); replan(); return; }
+  if (el.id === "sameEnd") { st.sameEnd = el.checked; replan(); return; }
+});
+
+async function setPlace(which) {
+  const inp = which === "start" ? $("#startAddr") : $("#endAddr");
+  const q = inp.value.trim(); if (!q) return;
+  $("#placeStatus").textContent = "Finding that address...";
+  const g = await geocode(q);
+  if (!g) { $("#placeStatus").textContent = "Couldn't find that address. Try adding the city and ZIP."; return; }
+  S.settings[which] = { label: q, lat: g.lat, lng: g.lng };
+  $("#placeStatus").textContent = `${which === "start" ? "Starting point" : "Return destination"} set.`;
+  S.manual = { 1: null, 2: null }; replan();
+}
+$("#setStart").onclick = () => setPlace("start");
+$("#setEnd").onclick = () => setPlace("end");
+$("#startAddr").addEventListener("keydown", e => { if (e.key === "Enter") setPlace("start"); });
+$("#endAddr").addEventListener("keydown", e => { if (e.key === "Enter") setPlace("end"); });
+$("#addLinks").onclick = addLinks;
+$("#goDay1").onclick = () => { S.tab = "day1"; save(); render(); scrollTo(0, 0); };
+$("#loadSample").onclick = () => { S = freshState(); S.tab = "setup"; replan(); };
+let clearArmed = false;
+$("#clearAll").onclick = () => {
+  if (!clearArmed) { clearArmed = true; $("#clearAll").textContent = "Tap again to remove all"; setTimeout(() => { clearArmed = false; $("#clearAll").textContent = "Remove all"; }, 3000); return; }
+  S.homes = []; S.assign = {}; S.manual = { 1: null, 2: null }; S.isSample = false; clearArmed = false; $("#clearAll").textContent = "Remove all"; replan();
+};
+$("#sheet").addEventListener("close", () => render());
+addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(render, 200); });
+setInterval(() => { if (S && [1, 2].some(isLive)) recompute(); }, 60000);
+
+(async () => {
+  if (TOUR) TOUR_DATA = await loadTourFile();
+  if (!S || !S.settings) { S = freshState(); if (TOUR_DATA) S.tab = "day1"; }
+  if (TOUR_DATA) { $("#loadSample").textContent = "Start this tour over"; document.title = (TOUR_DATA.name || "Tour") + " · Tour Day Planner"; }
+  if (TOUR && !TOUR_DATA) $("#addStatus").textContent = "Couldn't load that tour link, so the sample tour is showing.";
+  render();
+  recompute();
+})();
+})();
+</script>
+</body>
+</html>
