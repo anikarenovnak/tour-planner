@@ -187,10 +187,17 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .pill.no{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 .oh{color:var(--d1);font-weight:500}
 .yardline{color:var(--ok);font-size:12.5px}
+.confrow{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13px;background:var(--bg);border-radius:8px;padding:6px 10px;cursor:default}
+.confrow .chk{font-size:13px}
+.timeset{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.timeset input{width:auto;padding:4px 6px;font-size:13px}
+.lateline{color:var(--danger);font-size:12.5px;font-weight:500}
 .addbox{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:grid;gap:8px;background:var(--card)}
 .addbox .row{flex-wrap:nowrap}
 .rm{color:var(--muted);font-size:12px;padding:2px 6px}
 .rm.armed{color:var(--danger);font-weight:500}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:12px;align-items:center;background:var(--head);color:var(--card);padding:10px 12px 10px 16px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px);font-size:13.5px}
+.toast .btn{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
 .stop-top{display:flex;gap:12px;align-items:start}
 .cardnote{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:13px;white-space:pre-wrap;cursor:text}
 .cardnote b{font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);display:block}
@@ -353,6 +360,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
   </section>
 </main>
 
+<div id="toast" class="toast" role="status" hidden></div>
 <dialog class="sheet" id="shareDlg"><div class="sheet-in">
   <div class="sheet-head"><div><div class="eyebrow">Share this schedule</div><h3>Send your tour</h3></div><button class="close" data-closeshare aria-label="Close">×</button></div>
   <p style="margin:0" id="shareIntro">Anyone who opens this link sees this same schedule and can edit it. Changes show up on everyone's phone within a few seconds: homes, days, order, times, check-offs and notes.</p>
@@ -565,6 +573,29 @@ function assignDays() {
   return res;
 }
 
+// Booked times: keep booked homes in time order and slot the others where they cost the least driving and waiting.
+function orderWithBookings(day, from, B, rest, doneCount) {
+  const st = S.settings;
+  let t0 = toMin(st.dayStart[day - 1]) + doneCount * (st.showMin + st.buffer + 20);
+  if (isLive(day)) t0 = Math.max(t0, nowMin());
+  const cost = seq => {
+    let t = t0, p = from, c = 0;
+    for (const h of seq) {
+      const d = leg(p, h).min, reach = t + d + st.buffer, f = h.fixedTime ? toMin(h.fixedTime) : null;
+      const start = f != null ? Math.max(reach, f) : reach;
+      c += d + (f != null ? Math.max(0, reach - f) * 20 + (start - reach) * 0.3 : 0);
+      t = start + (h.showMin || st.showMin); p = h;
+    }
+    return c + leg(p, B).min;
+  };
+  let seq = rest.filter(h => h.fixedTime).sort((a, b) => toMin(a.fixedTime) - toMin(b.fixedTime));
+  for (const h of solve(from, B, rest.filter(h => !h.fixedTime))) {
+    let best = null, bc = Infinity;
+    for (let i = 0; i <= seq.length; i++) { const cand = [...seq.slice(0, i), h, ...seq.slice(i)]; const c = cost(cand); if (c < bc) { bc = c; best = cand; } }
+    seq = best;
+  }
+  return seq;
+}
 function dayOrder(day, assignment) {
   const A = S.settings.start, B = endPoint();
   const hs = S.homes.filter(h => h.lat != null && assignment.get(h.id) === day);
@@ -578,7 +609,8 @@ function dayOrder(day, assignment) {
     order = man.map(id => byId.get(id)).filter(Boolean);
     const extra = rest.filter(h => !man.includes(h.id));
     order = [...order, ...extra];
-  } else order = solve(from, B, rest);
+  } else if (rest.some(h => h.fixedTime)) order = orderWithBookings(day, from, B, rest, done.length);
+  else order = solve(from, B, rest);
   return [...done, ...order];
 }
 
@@ -595,10 +627,13 @@ function buildDay(day, order) {
       const lg = leg(p, h);
       if (live && !h.done && firstOpen) { t = Math.max(t, nowMin()); firstOpen = false; }
       out.push({ type: "drive", t, min: lg.min, mi: lg.mi, from: p, to: h });
-      const arrive = t + lg.min + st.buffer;
+      const reach = t + lg.min + st.buffer;
+      const fixed = h.fixedTime ? toMin(h.fixedTime) : null;
+      const arrive = fixed != null && !h.done ? Math.max(reach, fixed) : reach; // showing starts at the booked time
+      const wait = arrive - reach, late = fixed != null && !h.done ? Math.max(0, reach - fixed) : 0;
       let leave = arrive + (h.showMin || st.showMin);
       if (h.done && live && h.doneMin != null) leave = h.doneMin;
-      out.push({ type: "stop", h, idx: i, arrive, leave, t: arrive });
+      out.push({ type: "stop", h, idx: i, arrive, leave, t: arrive, wait, late, fixed });
       t = leave; p = h;
       if (lunchAfter === i && st.lunchMin > 0) { out.push({ type: "lunch", t, end: t + st.lunchMin, lastCity: h.area || h.city }); t += st.lunchMin; lunchDone = true; }
     });
@@ -614,7 +649,8 @@ function buildDay(day, order) {
     if (base[base.length - 1].t < target - 30) return sim(-1);
     let bestD = Infinity;
     base.filter(x => x.type === "stop").forEach(x => {
-      const d = Math.abs(x.leave - target);
+      const lateAfter = sim(x.idx).filter(y => y.type === "stop").reduce((a, y) => a + y.late, 0); // don't let lunch make us late for a booked time
+      const d = Math.abs(x.leave - target) + lateAfter * 10;
       if (d < bestD) { bestD = d; lunchAfter = x.idx; }
     });
   }
@@ -858,11 +894,18 @@ function renderDay(day) {
     ${st.days === 2 ? `<span class="muted small">Move homes between days from any home's details.</span>` : ""}
     ${usingFallback ? `<span class="pill warn">Drive times estimated (offline)</span>` : ""}`;
   renderOrderList($("#dayOrder"), day);
+  plan.items.forEach((x, i) => { if (x.type === "drive") { const n = plan.items[i + 1]; x.waitAfter = n && n.type === "stop" ? n.wait || 0 : 0; } });
   $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("") +
     `<div style="padding:14px 0 0 82px"><button class="btn gold small" data-addmore>+ Add another home</button></div>`;
 }
 
-let EDIT = null, PLACEMSG = "", NOTE_EDIT = null;
+let EDIT = null, PLACEMSG = "", NOTE_EDIT = null, LAST_REMOVED = null, toastT = null;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.innerHTML = `<span>${esc(msg)}</span><button class="btn small" data-undo>Undo</button>`;
+  el.hidden = false; clearTimeout(toastT); toastT = setTimeout(hideToast, 7000);
+}
+function hideToast() { const el = document.getElementById("toast"); if (el) el.hidden = true; }
 const sel = (attr, val, opts) => `<select ${attr}>${opts.map(([v, l]) => `<option value="${v}" ${String(v) === String(val) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
 function lunchForm() {
   const st = S.settings;
@@ -901,7 +944,7 @@ function tlItem(x, day, next) {
   if (x.type === "drive") {
     if (x.min < 0.5) return "";
     return `<div class="tl-item drive-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node drive"></span></div>
-      <div class="tl-body" style="padding-block:2px"><div class="drive-row">${carIcon}<span>${dur(x.min)} drive · ${x.mi.toFixed(1)} mi</span></div></div></div>`;
+      <div class="tl-body" style="padding-block:2px"><div class="drive-row">${carIcon}<span>${dur(x.min)} drive · ${x.mi.toFixed(1)} mi${x.waitAfter > 2 ? ` · then ${dur(x.waitAfter)} free before the booked time` : ""}</span></div></div></div>`;
   }
   if (x.type === "lunch") {
     return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}<small>${fmt(x.end)}</small></div><div class="tl-rail"><span class="node lunch">L</span></div>
@@ -926,11 +969,17 @@ function tlItem(x, day, next) {
     <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
     <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
       <div class="stop-top">${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
-      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}
+      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
         <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
       ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
+      <div class="confrow" data-stop>
+        <label class="chk small"><input type="checkbox" data-confirm="${h.id}" ${h.confirmed ? "checked" : ""}> Showing confirmed</label>
+        <label class="timeset">Booked time <input type="time" data-fixed="${h.id}" value="${esc(h.fixedTime || "")}" aria-label="Booked showing time for ${esc(h.address)}"></label>
+        ${h.fixedTime ? `<button class="btn ghost rm" data-clearfixed="${h.id}">Clear time</button>` : ""}
+      </div>
+      ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
       ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
           <button class="btn small gold" data-notedone="${h.id}" style="justify-self:start">Save note</button></div>`
         : h.notes ? `<div class="cardnote" data-note="${h.id}" title="Tap to edit"><b>Notes</b>${esc(h.notes)}</div>` : ""}
@@ -1104,7 +1153,7 @@ function render() {
 /* ---------- events ---------- */
 document.addEventListener("click", e => { if (e.target.closest("[data-closeshare]") || e.target === $("#shareDlg")) $("#shareDlg").close(); });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1142,13 +1191,15 @@ document.addEventListener("click", async e => {
   if (t.hasAttribute("data-addlunch")) { S.settings.lunchMin = 45; EDIT = "lunch"; replan(); return; }
   if (t.hasAttribute("data-rebalance")) { S.lockDays = false; S.assign = {}; S.manual = { 1: null, 2: null }; replan(); return; }
   if (t.dataset.reopt) { S.manual[+t.dataset.reopt] = null; replan(); return; }
+  if (t.dataset.clearfixed) { const h = S.homes.find(x => x.id === t.dataset.clearfixed); if (h) { delete h.fixedTime; h.fixedTime = ""; } await recompute(); return; }
+  if (t.hasAttribute("data-undo")) {
+    if (LAST_REMOVED) { const { home, index, assign } = LAST_REMOVED; S.homes.splice(Math.min(index, S.homes.length), 0, home); if (assign) S.assign[home.id] = assign; LAST_REMOVED = null; }
+    hideToast(); await recompute(); return;
+  }
   if (t.dataset.remove) {
-    if (!t.classList.contains("armed")) {
-      const old = t.textContent; t.classList.add("armed"); t.textContent = "Tap again to remove";
-      setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = old; } }, 3000);
-      return;
-    }
     const id = t.dataset.remove;
+    const index = S.homes.findIndex(h => h.id === id);
+    if (index >= 0) { LAST_REMOVED = { home: S.homes[index], index, assign: S.assign[id] }; showToast(`Removed ${S.homes[index].address}.`); }
     if (!t.closest("#homelist")) S.lockDays = true;
     S.homes = S.homes.filter(h => h.id !== id); delete S.assign[id];
     for (const d of [1, 2]) if (S.manual[d]) S.manual[d] = S.manual[d].filter(x => x !== id);
@@ -1175,6 +1226,8 @@ document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === 
 
 document.addEventListener("change", e => {
   const el = e.target, st = S.settings;
+  if (el.dataset.confirm) { const h = S.homes.find(x => x.id === el.dataset.confirm); if (h) h.confirmed = el.checked; save(); render(); return; }
+  if (el.dataset.fixed) { const h = S.homes.find(x => x.id === el.dataset.fixed); if (h) { h.fixedTime = el.value || ""; for (const d of [1, 2]) if (S.manual[d] && h.fixedTime) S.manual[d] = null; } replan(); return; }
   if (el.dataset.set) { const k = el.dataset.set; st[k] = k === "lunchAt" ? (el.value || "12:30") : +el.value; replan(); return; }
   if (el.hasAttribute("data-sameend")) { st.sameEnd = el.checked; S.manual = { 1: null, 2: null }; replan(); return; }
   if (el.classList.contains("tl-addr")) { setPlace(el.dataset.which, el, $("#tlStatus")); return; }
