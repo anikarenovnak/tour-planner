@@ -1,0 +1,549 @@
+{
+ "name": "LA & Santa Barbara tour",
+ "days": 2,
+ "start": {
+  "label": "The Beverly Hilton, 9876 Wilshire Blvd, Beverly Hills",
+  "lat": 34.067004,
+  "lng": -118.413179
+ },
+ "homes": [
+  {
+   "url": "https://www.redfin.com/CA/Glendale/2566-E-Chevy-Chase-Dr-91206/home/22680142",
+   "address": "2566 E Chevy Chase Dr",
+   "city": "Glendale",
+   "zip": "91206",
+   "area": "Chevy Chase Estates",
+   "lat": 34.1619109,
+   "lng": -118.2105408,
+   "price": 1895000,
+   "beds": 4,
+   "baths": 5,
+   "sqft": 3123,
+   "yearBuilt": 2018,
+   "lot": "0.4 acres",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 47,
+   "mls": "26991377",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/377/genMid.26991377_2.jpg",
+   "agent": "Andrea Shink",
+   "brokerage": "Compass",
+   "contact": "Kayla Shink",
+   "phone": "3105969763",
+   "agents": [
+    "Andrea Shink · (310) 749-6440",
+    "Kayla Shink · (310) 596-9763 (books showings)"
+   ],
+   "showing": "Text Kayla to book.",
+   "summary": "Custom 2018 Mediterranean in the Chevy Chase foothills with canyon views, an elevator, and a private bath for every bedroom. The price was cut and it's been sitting 47 days, so there's room to talk.",
+   "highlights": [
+    "Built 2018 on 0.4 acres with canyon and mountain views",
+    "Elevator between all three levels",
+    "All 4 bedrooms have their own bathroom",
+    "Big kitchen island, balcony off the living area",
+    "EV charger, 2-car garage",
+    "Price cut from $2,119,000"
+   ],
+   "concerns": [
+    "Three levels on a hillside: lots of stairs if the elevator ever fails",
+    "Upper yard is terraced hillside, not a flat lawn",
+    "Seller likely to decline the loan assumption (see assumable notes)"
+   ],
+   "questions": [
+    "Will the seller actually consider an assumption, or only a regular sale?",
+    "Who is the loan servicer, and what's the exact balance and rate?",
+    "Elevator age and service records?",
+    "Any offers since the price cut?",
+    "Are inspection reports or disclosures available?"
+   ],
+   "assumable": {
+    "status": "possible",
+    "label": "VA loan",
+    "notes": [
+     "County record: VA loan of $1,275,000 recorded Dec 16, 2020, lender Fairway Independent Mort; no later refinance on record.",
+     "Rate: 3.11% (estimate).",
+     "Balance: about $1.11M (estimate).",
+     "Cash needed above the loan: about $787K at the list price.",
+     "Agent says the VA loan can technically be assumed, but the seller will likely decline; confirming.",
+     "Non-veteran buyer: agent is checking."
+    ],
+    "source": "Assumable-loan list"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Sherman-Oaks/15373-Valley-Vista-Blvd-91403/home/4912343",
+   "address": "15373 Valley Vista Blvd",
+   "city": "Sherman Oaks",
+   "zip": "91403",
+   "area": "Sherman Oaks (south of Ventura)",
+   "lat": 34.1486553,
+   "lng": -118.466227,
+   "price": 2999000,
+   "beds": 5,
+   "baths": 5,
+   "sqft": 4508,
+   "yearBuilt": 1954,
+   "lot": "0.32 acres (flat)",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 7,
+   "mls": "26106263",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/263/genMid.26106263_0.jpg",
+   "agent": "Michael Bergin",
+   "brokerage": "Compass",
+   "contact": "Michael Bergin",
+   "phone": "3106000715",
+   "showing": "Text or call Michael.",
+   "summary": "The biggest home on the tour: a contemporary rebuilt in 2016 on a flat, gated 13,947 sq ft lot south of Ventura with a pool and spa. Brand new to market, so expect competition.",
+   "highlights": [
+    "Rebuilt 2016: 20-ft ceilings in the living room, foyer and kitchen",
+    "Flat 0.32-acre lot, gated, mature hedges",
+    "Pool, spa and grassy lawn",
+    "Lanai Road Elementary school district",
+    "Just listed (7 days)"
+   ],
+   "concerns": [
+    "No loan to take over: regular financing at today's rates",
+    "Top of the budget",
+    "Valley Vista Blvd is a busy street: listen for road noise"
+   ],
+   "questions": [
+    "Is there an offer date?",
+    "How many showings and offers so far?",
+    "What exactly was rebuilt in 2016, and was it all permitted?",
+    "Pool equipment age?",
+    "Would the seller consider a lease?"
+   ],
+   "assumable": {
+    "status": "no",
+    "label": "Not assumable",
+    "notes": [
+     "County record shows SBA and commercial business loans (about $3.2M, 2021), not a loan a buyer can take over."
+    ],
+    "source": "Listing / county record"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/1132-Chantilly-Rd-90077/home/6829703",
+   "address": "1132 Chantilly Rd",
+   "city": "Los Angeles",
+   "zip": "90077",
+   "area": "Lower Bel Air",
+   "lat": 34.0924319,
+   "lng": -118.4570905,
+   "price": 2599000,
+   "beds": 3,
+   "baths": 3,
+   "sqft": 2531,
+   "yearBuilt": 1962,
+   "lot": "0.58 acres",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 29,
+   "mls": "26997169",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/169/genMid.26997169_1.jpg",
+   "agent": "Jonathan Butler",
+   "brokerage": "Douglas Elliman",
+   "contact": "Jonathan Butler",
+   "phone": "3103109280",
+   "agents": [
+    "Jonathan Butler · (310) 310-9280",
+    "Joshua Altman · (310) 819-3250"
+   ],
+   "showing": "Call Jonathan.",
+   "summary": "Single-level 1962 home in lower Bel Air on more than half an acre, with a big great room, a Wolf and Sub-Zero kitchen and a large private backyard.",
+   "highlights": [
+    "Single level, 2,531 sq ft",
+    "Over half an acre with a newly sodded lawn",
+    "Wolf and Sub-Zero kitchen with a giant island",
+    "Primary suite with fireplace, sitting area and yard access",
+    "Easy access to the Westside and Beverly Hills"
+   ],
+   "concerns": [
+    "No loan to take over: conventional loan at 5.85%",
+    "1962 home: ask about plumbing, electrical and sewer line",
+    "High fire zone: insurance can be expensive or hard to get"
+   ],
+   "questions": [
+    "Has the seller gotten a recent fire insurance quote?",
+    "When were the roof, plumbing and electrical last updated?",
+    "Sewer line inspection done?",
+    "How much of the lot is usable, and could it be expanded?",
+    "Is there flexibility on price at 29 days?"
+   ],
+   "assumable": {
+    "status": "no",
+    "label": "Not assumable",
+    "notes": [
+     "County record: conventional loan of $1,500,000 recorded 2024 (Morgan Stanley, 5.85%). Conventional loans can't be taken over by a buyer."
+    ],
+    "source": "Listing / county record"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/1225-S-Cloverdale-Ave-90019/home/6913066",
+   "address": "1225 S Cloverdale Ave",
+   "city": "Los Angeles",
+   "zip": "90019",
+   "area": "Miracle Mile",
+   "lat": 34.0485693,
+   "lng": -118.3513879,
+   "price": 2245000,
+   "beds": 4,
+   "baths": 4,
+   "sqft": 2599,
+   "yearBuilt": 1924,
+   "lot": "6,006 sq ft",
+   "parking": "2 spaces",
+   "hoa": "None",
+   "dom": 12,
+   "mls": "26104629",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/629/genMid.26104629_0.jpg",
+   "agent": "Tanya Baron",
+   "brokerage": "Pardee Properties",
+   "contact": "Tanya Baron",
+   "phone": "3104866334",
+   "agents": [
+    "Tanya Baron · (310) 486-6334",
+    "Tami Pardee · (310) 907-6517"
+   ],
+   "showing": "Call or text Tanya.",
+   "summary": "Renovated 1924 Spanish home in Miracle Mile with a fully permitted ADU that works as a true second home. Turnkey, with owned solar and a new 2026 HVAC system.",
+   "highlights": [
+    "Main house 3 bed / 3 bath plus a permitted ADU with its own kitchen, laundry and entrance",
+    "Owned solar (not leased)",
+    "New HVAC installed 2026",
+    "Viking kitchen with walk-in pantry",
+    "Private yard with mature ficus trees",
+    "Just listed (12 days)"
+   ],
+   "concerns": [
+    "The VA loan is from 2026, so its rate is likely near today's rates: little savings from taking it over",
+    "Ficus trees: check roots near the foundation and sewer line",
+    "100-year-old house: ask what was updated behind the walls"
+   ],
+   "questions": [
+    "Has the ADU been rented, and for how much?",
+    "Is the ADU finaled with the city?",
+    "Were permits pulled for the renovation?",
+    "What's the actual rate on the VA loan?",
+    "Sewer line scope done?"
+   ],
+   "assumable": {
+    "status": "possible",
+    "label": "VA loan",
+    "notes": [
+     "County record: VA loan of $1,986,000 recorded Apr 1, 2026, lender Homeplus; no later refinance on record.",
+     "Rate: 6.3% (estimate).",
+     "Balance: about $1.97M (estimate).",
+     "Cash needed above the loan: about $272K at the list price.",
+     "Ani emailed the listing agent; no reply yet."
+    ],
+    "source": "Assumable-loan list"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/El-Segundo/526-E-Maple-Ave-90245/home/6646221",
+   "address": "526 E Maple Ave",
+   "city": "El Segundo",
+   "zip": "90245",
+   "area": "El Segundo",
+   "lat": 33.9268261,
+   "lng": -118.410181,
+   "price": 2650000,
+   "beds": 3,
+   "baths": 3,
+   "sqft": 1963,
+   "yearBuilt": 1925,
+   "lot": "6,697 sq ft",
+   "parking": "Small garage + long driveway (up to 8 cars)",
+   "hoa": "None",
+   "dom": 62,
+   "mls": "SB26195436",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/45/mbpaddedwide/436/genMid.SB26195436_0.jpg",
+   "agent": "Regina (Gina) Hoffman",
+   "brokerage": "eXp Realty",
+   "contact": "Gina Hoffman",
+   "phone": "3108645347",
+   "showing": "Call or text Gina.",
+   "summary": "Remodeled single-level home in the heart of El Segundo with top-rated schools, a detached rumpus room with a bar, a rooftop deck and solar. The agent confirmed a 2.23% VA loan.",
+   "highlights": [
+    "Single level, fully remodeled",
+    "Detached rumpus room with bar (not in the sq ft)",
+    "Rooftop deck, hot tub, synthetic turf yard",
+    "Solar panels and EV charger",
+    "El Segundo schools (10/10 high school)",
+    "Price cut from $2,749,000"
+   ],
+   "concerns": [
+    "Non-veteran buyer only at a $3,000,000 price (list is $2.65M)",
+    "A $500K second loan must be paid off at sale",
+    "Smaller home at 1,963 sq ft; small garage",
+    "Near LAX: listen for flight noise"
+   ],
+   "questions": [
+    "Would the seller take a veteran buyer at the list price?",
+    "What's behind the $3M non-veteran price: lost VA entitlement?",
+    "Who's the servicer, and how long does approval take?",
+    "Is the solar owned or leased?",
+    "How noticeable is airport noise?"
+   ],
+   "assumable": {
+    "status": "confirmed",
+    "label": "VA loan · 2.23%",
+    "notes": [
+     "County record: VA loan of $1,285,000 recorded Sep 8, 2020, lender Guaranteed Rate; no later refinance on record.",
+     "Other loan on record: second loan of $500,000 recorded May 15, 2026 (would need to be paid off).",
+     "Rate: 2.23% (from the listing agent).",
+     "Balance: about $1M (agent's figure).",
+     "Cash needed above the loan: about $1.65M at the list price.",
+     "Agent confirmed: VA loan at 2.23%, about $1.0M owed, 24 years left. Non-veteran buyer only at a $3,000,000 price (list is $2.65M).",
+     "Non-veteran buyer: possible, with conditions."
+    ],
+    "source": "Assumable-loan list"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Santa-Barbara/2649-Dorking-Pl-93105/home/21604703",
+   "address": "2649 Dorking Pl",
+   "city": "Santa Barbara",
+   "zip": "93105",
+   "area": "Mission Canyon",
+   "lat": 34.4505802,
+   "lng": -119.7124379,
+   "price": 3295000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 2932,
+   "yearBuilt": 2004,
+   "lot": "0.32 acres",
+   "parking": "",
+   "hoa": "None",
+   "dom": 113,
+   "mls": "26-63 (Santa Barbara MLS)",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/87/mbpaddedwide/-63/genMid.26-63_5.jpg",
+   "agent": "Nico Pollero",
+   "brokerage": "Pollero Partners",
+   "contact": "Nico Pollero",
+   "phone": "",
+   "showing": "Santa Barbara MLS: book directly with Nico (phone not listed on Redfin).",
+   "summary": "2004 Spanish Mediterranean in peaceful Mission Canyon, 2 miles from downtown, with a heated saltwater pool and mountain views. The listing itself advertises a 2.25% assumable VA loan.",
+   "highlights": [
+    "Listing advertises an assumable VA loan: 2.25% fixed, 25 years left",
+    "Heated saltwater pool, tropical landscaping",
+    "Cathedral ceilings with skylights, 2 fireplaces, custom tile",
+    "Mountain views, 2 miles to downtown",
+    "Price cut from $3,495,000"
+   ],
+   "concerns": [
+    "Assumption is for VA-qualified buyers only, per the listing",
+    "Large cash gap: about $1.73M above the loan",
+    "A $250K home equity line (2024) must be paid off",
+    "Mission Canyon is a high fire zone: check insurance",
+    "113 days on market: ask why"
+   ],
+   "questions": [
+    "Exact loan balance and servicer?",
+    "Would the seller consider a non-veteran buyer at any price?",
+    "Will the home equity line be paid off at closing?",
+    "What does fire insurance cost here?",
+    "Any offers since the price cut?"
+   ],
+   "assumable": {
+    "status": "advertised",
+    "label": "VA loan · 2.25%",
+    "notes": [
+     "Listing says: VA loan assumable by other VA-qualified buyers at 2.25% fixed, 25 years left.",
+     "County record: VA loan of $1,799,598 recorded Mar 2021 (Homebridge).",
+     "Balance: about $1.57M (estimate). Cash needed above the loan: about $1.73M at the list price.",
+     "Other loan on record: $250K home equity line (2024), would need to be paid off.",
+     "Agent not emailed yet: no agent email was found."
+    ],
+    "source": "Listing / county record"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Santa-Barbara/1625-Sycamore-Canyon-Rd-93108/home/21605357",
+   "address": "1625 Sycamore Canyon Rd",
+   "city": "Santa Barbara",
+   "zip": "93108",
+   "area": "Sycamore Canyon (near Montecito)",
+   "lat": 34.4383445,
+   "lng": -119.6764772,
+   "price": 1749000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 1959,
+   "yearBuilt": 1997,
+   "lot": "0.79 acres",
+   "parking": "6 spaces",
+   "hoa": "None",
+   "dom": 154,
+   "mls": "26-1926 (Santa Barbara MLS)",
+   "openHouse": "Saturday, Nov 14, 10:00 AM – 1:00 PM",
+   "photo": "https://ssl.cdn-redfin.com/photo/87/mbpaddedwide/926/genMid.26-1926_5.jpg",
+   "agent": "Etherton Real Estate",
+   "brokerage": "eXp Realty",
+   "contact": "",
+   "phone": "",
+   "showing": "Santa Barbara MLS: phone not listed on Redfin. Open house Saturday 10-1.",
+   "summary": "Nearly 0.8-acre canyon property five minutes from downtown with a seasonal creek and a detached studio ADU. The listing advertises an assumable 3.625% VA loan. Total is 4 bed / 3 bath counting the ADU.",
+   "highlights": [
+    "Listing advertises an assumable VA loan at 3.625%",
+    "Main house 3 bed / 2 bath (1,559 sq ft) plus a studio ADU",
+    "ADU rent potential up to about $4,000/month per the listing",
+    "0.79 acres with a seasonal creek and mature trees",
+    "Price lowered again (down $41K, originally $1,895,000)",
+    "5 min to downtown, 7 min to the beach"
+   ],
+   "concerns": [
+    "Sycamore Canyon Rd is a through road: check traffic noise",
+    "Creek on the lot: ask about flood zone and insurance",
+    "Canyon setting: check fire insurance",
+    "154 days on market"
+   ],
+   "questions": [
+    "Exact loan balance, servicer, and is a non-veteran buyer OK?",
+    "Is the ADU permitted, and has it been rented?",
+    "Flood zone? Any creek or drainage issues?",
+    "What does fire insurance cost?",
+    "Why has it sat 154 days?"
+   ],
+   "assumable": {
+    "status": "advertised",
+    "label": "VA loan · 3.625%",
+    "notes": [
+     "Listing says: assumable 3.625% VA loan.",
+     "County record: VA loan of $999,999 recorded Jan 2022 (Cardinal Financial), a refinance of earlier VA loans.",
+     "Balance: about $901K (estimate). Cash needed above the loan: about $848K at the list price.",
+     "Non-veteran buyer: not stated. Ask the agent.",
+     "Agent not emailed yet: no agent email was found."
+    ],
+    "source": "Listing / county record"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Malibu/2915-Valmere-Dr-90265/home/6854441",
+   "address": "2915 Valmere Dr",
+   "city": "Malibu",
+   "zip": "90265",
+   "area": "El Nido, Corral Canyon",
+   "lat": 34.0450046,
+   "lng": -118.7401071,
+   "price": 2595000,
+   "beds": 3,
+   "baths": 4,
+   "sqft": 2109,
+   "yearBuilt": 1991,
+   "lot": "0.27 acres (double lot)",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 223,
+   "mls": "26672465",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/465/genMid.26672465_3.jpg",
+   "agent": "Shelly Yrigoyen",
+   "brokerage": "Sotheby's",
+   "contact": "Shelly Yrigoyen",
+   "phone": "3109220082",
+   "showing": "By appointment only.",
+   "summary": "Corral Canyon retreat on a double lot with ocean views toward Point Dume, a separate ADU with kitchenette, and lush gardens with fruit trees. 223 days on market, so there's likely room to negotiate.",
+   "highlights": [
+    "Ocean views toward Point Dume, wraparound deck",
+    "Separate ADU with private entrance and kitchenette",
+    "Primary suite with beamed ceilings and private deck",
+    "Spa, garden paths, lemon, lime, fig and orange trees",
+    "Solar, generator, gym, Tesla and Rivian chargers"
+   ],
+   "concerns": [
+    "No loan to take over: conventional loan",
+    "223 days on market: find out why",
+    "Canyon location: fire insurance and evacuation routes",
+    "Listed as 3 bed but described as 4 extra rooms: confirm which are legal bedrooms"
+   ],
+   "questions": [
+    "Why hasn't it sold? Any offers fall through?",
+    "Is the solar owned or leased?",
+    "Is the ADU permitted?",
+    "Which rooms are legal bedrooms?",
+    "What does fire insurance cost, and how flexible is the seller on price?"
+   ],
+   "assumable": {
+    "status": "no",
+    "label": "Not assumable",
+    "notes": [
+     "County record: conventional loan of $1,230,000 recorded 2021 (First Republic). Conventional loans can't be taken over by a buyer."
+    ],
+    "source": "Listing / county record"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Malibu/4370-Hillview-Dr-90265/home/6855799",
+   "address": "4370 Hillview Dr",
+   "city": "Malibu",
+   "zip": "90265",
+   "area": "Latigo Canyon",
+   "lat": 34.045741,
+   "lng": -118.7759041,
+   "price": 1895000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 2768,
+   "yearBuilt": 1989,
+   "lot": "6,425 sq ft",
+   "parking": "2-car attached garage",
+   "hoa": "None",
+   "dom": 11,
+   "mls": "26985351",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/351/genMid.26985351_0.jpg",
+   "agent": "David Berg",
+   "brokerage": "Compass (Smith & Berg)",
+   "contact": "David Berg",
+   "phone": "3105003931",
+   "agents": [
+    "David Berg · (310) 500-3931",
+    "F. Ron Smith · (310) 500-3931"
+   ],
+   "showing": "Showing requests go to the team by email. Second visit.",
+   "summary": "Provençal-style home in Latigo Canyon with ocean views from east and west exposures, three en suite bedrooms plus an office and den, and a treetop backyard with a spa. Also offered for lease.",
+   "highlights": [
+    "Ocean and canyon views, sunrise and sunset exposures",
+    "Three levels: 3 en suite bedrooms plus office and den",
+    "French oak floors, cedar wine room",
+    "Backyard spa, fireside lounge, terraced fruit-tree gardens",
+    "Also available for lease"
+   ],
+   "concerns": [
+    "Adjustable-rate conventional loan: can't be taken over",
+    "Remote canyon location: long drives to town",
+    "Three levels on a slope: lots of stairs",
+    "Fire zone: check insurance"
+   ],
+   "questions": [
+    "Would the seller do a lease with an option to buy?",
+    "Lease terms: price, length, pets?",
+    "Would the seller consider an offer around $1.75M?",
+    "Septic or sewer? Last serviced?",
+    "Roof and systems age?"
+   ],
+   "assumable": {
+    "status": "no",
+    "label": "Adjustable conventional loan",
+    "notes": [
+     "Conventional loans can't be taken over by a buyer.",
+     "County record: New Conventional loan of $1,703,000 recorded Feb 18, 2022, lender Technicolor Federal Credit Union.",
+     "Balance: about $1.52M (estimate).",
+     "Agent encouraged an offer; renting or lease terms could be written into one."
+    ],
+    "source": "Assumable-loan list"
+   }
+  }
+ ]
+}

@@ -164,6 +164,16 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .sec h4{margin:0 0 6px;font-family:var(--f-head);font-weight:500;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
 .sec ul{margin:0;padding-left:18px;display:grid;gap:4px}
 .sec.concerns li::marker{color:var(--warn)}
+.hero{width:100%;aspect-ratio:16/9;max-width:100%;object-fit:cover;border-radius:10px;background:var(--gold-soft);display:block}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px 16px;margin:0}
+.kv div{min-width:0}.kv dt{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.kv dd{margin:0;font-size:13.5px}
+.asm{border-radius:10px;padding:12px 14px;border:1px solid var(--line);display:grid;gap:8px}
+.asm.yes{background:color-mix(in srgb,var(--ok) 9%,var(--card));border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+.asm.maybe{background:var(--gold-soft);border-color:var(--gold)}
+.asm.no{background:var(--bg)}
+.asm ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13.5px}
+.pill.no{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.oh{color:var(--d1);font-weight:500}
 .qlist{list-style:none;padding:0!important}
 .qlist label{display:flex;gap:8px;align-items:start;cursor:pointer}
 .qlist input{margin-top:3px;accent-color:var(--gold-ink);width:16px;height:16px;flex:none}
@@ -717,6 +727,7 @@ function tlItem(x, day, next) {
         ${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
+      ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
       ${agentLine}
     </div></div></div>`;
 }
@@ -808,6 +819,22 @@ function renderMapView() {
 }
 
 /* ---------- detail sheet ---------- */
+const ASM = { confirmed: ["yes", "ok", "Assumable: agent confirmed"], advertised: ["yes", "ok", "Assumable: in the listing"],
+  possible: ["maybe", "", "Possibly assumable"], no: ["no", "no", "Not assumable"] };
+function asmPill(h) {
+  const a = h.assumable; if (!a) return "";
+  const [, cls, word] = ASM[a.status] || ASM.possible;
+  return `<span class="pill ${cls}">${esc(a.status === "no" ? word : word.split(":")[0] + " · " + a.label)}</span>`;
+}
+function asmBlock(h) {
+  const a = h.assumable;
+  if (!a) return `<div class="sec"><h4>Assumable loan notes</h4><p class="muted small" style="margin:0">Not on the assumable-loan list. No notes yet.</p></div>`;
+  const [cls, , word] = ASM[a.status] || ASM.possible;
+  return `<div class="sec"><h4>Assumable loan notes</h4><div class="asm ${cls}">
+    <div><b style="font-family:var(--f-head);font-weight:500;font-size:16px">${esc(word)}</b>${a.status !== "no" ? ` <span class="muted">· ${esc(a.label)}</span>` : ""}</div>
+    <ul>${(a.notes || []).map(n => `<li>${esc(n)}</li>`).join("")}</ul>
+    ${a.source ? `<div class="muted small">Source: ${esc(a.source)}</div>` : ""}</div></div>`;
+}
 function openSheet(id) {
   const h = S.homes.find(x => x.id === id); if (!h) return;
   const day = S.assign[h.id] || 1, plan = PLAN[day];
@@ -820,6 +847,7 @@ function openSheet(id) {
     <div class="sheet-head"><div style="min-width:0"><div class="eyebrow" style="color:${dayColor(day)}">Day ${day}${it ? ` · ${fmt(it.arrive)} – ${fmt(it.leave)}` : ""}</div>
       <h3>${esc(h.address)}</h3><div class="muted">${esc(fullAddr(h).replace(h.address + ", ", ""))}</div></div>
       <button class="close" data-close aria-label="Close">×</button></div>
+    ${h.photo ? `<img class="hero" src="${esc(h.photo)}" alt="${esc(h.address)}" loading="lazy" onerror="this.remove()">` : ""}
     <div class="facts" style="font-size:14px">${[h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : ""].filter(Boolean).join(" · ")}</div>
     <div class="actions">
       ${h.done ? `<button class="btn" data-undone="${h.id}">Undo done</button>` : `<button class="btn gold" data-done="${h.id}">Mark as visited</button>`}
@@ -829,6 +857,9 @@ function openSheet(id) {
     </div>
     ${!filled ? `<div class="note-sample">Summary, concerns and questions aren't filled in for this home yet. Send the Redfin links to Claude and ask to fill in the tour app.</div>` : ""}
     ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
+    ${asmBlock(h)}
+    ${(() => { const kv = [["Year built", h.yearBuilt], ["Lot", h.lot], ["Parking", h.parking], ["HOA", h.hoa], ["Days on market", h.dom], ["Open house", h.openHouse], ["MLS #", h.mls], ["Neighborhood", h.area]].filter(x => x[1] !== undefined && x[1] !== null && x[1] !== "");
+      return kv.length ? `<div class="sec"><h4>Property details</h4><dl class="kv">${kv.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl></div>` : ""; })()}
     <div class="sec"><h4>Key things</h4>${list(h.highlights)}</div>
     <div class="sec concerns"><h4>Concerns</h4>${list(h.concerns)}</div>
     <div class="sec"><h4>Questions to ask</h4>${h.questions && h.questions.length ? `<ul class="qlist">${h.questions.map((q, i) => `<li><label><input type="checkbox" data-ask="${h.id}" data-q="${i}" ${(h.asked || []).includes(i) ? "checked" : ""}><span>${esc(q)}</span></label></li>`).join("")}</ul>` : `<p class="muted small" style="margin:0">Not filled in yet.</p>`}</div>
@@ -837,6 +868,7 @@ function openSheet(id) {
         <label class="f">Agent name<input type="text" data-field="agent" data-id="${h.id}" value="${esc(h.agent)}"></label>
         <label class="f">Phone for showings<input type="text" data-field="phone" data-id="${h.id}" value="${esc(prettyPhone(h.phone))}" inputmode="tel"></label>
       </div>
+      ${h.agents && h.agents.length ? `<p class="small" style="margin:8px 0 0">${h.agents.map(esc).join("<br>")}${h.brokerage ? `<br><span class="muted">${esc(h.brokerage)}</span>` : ""}</p>` : ""}
       ${h.showing ? `<p class="muted small" style="margin:8px 0 0">${esc(h.showing)}</p>` : ""}
       ${phone ? `<div class="actions" style="margin-top:10px"><a class="btn gold small" href="${smsLink(h, day, tm)}">Text ${esc((h.contact || h.agent).split(/[ (]/)[0])}</a><a class="btn small" href="tel:${phone}">Call</a></div>` : ""}
     </div>
