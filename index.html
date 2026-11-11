@@ -401,7 +401,7 @@ const freshState = () => TOUR_DATA ? stateFrom(TOUR_DATA) : sampleState();
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 /* ---------- live sync (Firebase Realtime Database) ---------- */
-const DB = ""; // set to the Firebase Realtime Database URL
+const DB = "https://valenne-tour-planner-default-rtdb.firebaseio.com"; // Firebase project "Valenne Tour Planner"
 let LIVE = DB && TOUR ? TOUR : "";
 const CLIENT = Math.random().toString(36).slice(2);
 let lastSent = "", pushT = null, es = null, applying = false;
