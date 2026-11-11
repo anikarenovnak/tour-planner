@@ -429,6 +429,8 @@ async function pushLive() {
   if (cmp === lastSent) return;
   setSync("saving");
   try {
+    const remote = await loadLive(); // keep details the helper added that this phone hasn't seen yet
+    if (remote && mergeDetails(remote) && JSON.stringify(sharedPart(S)) !== cmp) { applying = true; save(); applying = false; render(); }
     const r = await fetch(`${DB}/tours/${LIVE}.json`, { method: "PUT", body: JSON.stringify({ ...sharedPart(S), _by: CLIENT, _at: Date.now() }) });
     if (!r.ok) throw new Error(r.status);
     lastSent = cmp; setSync("ok");
@@ -447,6 +449,19 @@ function normalize(d) {
   o.assign = d.assign || {};
   delete o._by; delete o._at;
   return o;
+}
+const USER_FIELDS = ["id", "pin", "done", "doneDay", "doneSeq", "doneMin", "notes", "asked", "confirmed", "fixedTime", "showMin", "lat", "lng"];
+function mergeDetails(remote) {
+  const rh = (Array.isArray(remote.homes) ? remote.homes : Object.values(remote.homes || {})).filter(Boolean);
+  let changed = false;
+  for (const h of S.homes) {
+    const r = rh.find(x => x.id === h.id);
+    if (r && (r.photo || r.summary) && !h.photo && !h.summary) {
+      for (const [k, v] of Object.entries(r)) if (!USER_FIELDS.includes(k)) h[k] = v;
+      h.pending = false; changed = true;
+    }
+  }
+  return changed;
 }
 function applyRemote(d) {
   if (!d || d._by === CLIENT) return;
@@ -723,14 +738,22 @@ async function unpackState(str) {
   const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
   return JSON.parse(await new Response(ds).text());
 }
+const QUEUE = "q3991b34a4f5d2a7058ccb192"; // tours with homes waiting for details (read by the helper on Ani's Mac)
+async function ensureLive() {
+  if (!DB || LIVE) return;
+  LIVE = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => b.toString(16).padStart(2, "0")).join("");
+  history.replaceState(null, "", location.pathname + "?tour=" + LIVE);
+  S.isSample = false; lastSent = ""; await pushLive(); listenLive();
+}
+async function flagForDetails() {
+  if (!DB || !S.homes.some(h => h.pending)) return;
+  await ensureLive(); clearTimeout(pushT); await pushLive();
+  try { await fetch(`${DB}/tours/${QUEUE}/${LIVE}.json`, { method: "PUT", body: JSON.stringify(Date.now()) }); } catch (e) {}
+}
 async function openShare() {
   let link;
   if (DB) {
-    if (!LIVE) { // start a new live tour for this schedule
-      LIVE = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => b.toString(16).padStart(2, "0")).join("");
-      history.replaceState(null, "", location.pathname + "?tour=" + LIVE);
-      S.isSample = false; lastSent = ""; await pushLive(); listenLive();
-    }
+    await ensureLive();
     link = location.origin + location.pathname + "?tour=" + LIVE;
   } else {
     const snap = JSON.parse(JSON.stringify(S)); delete snap.tab; delete snap.mapDay;
@@ -762,7 +785,7 @@ async function addHome(line, pinDay) {
     home = { url: `https://www.redfin.com/search?q=${encodeURIComponent(line)}`, address: parts[0], city: (parts[1] || "").replace(/\b[A-Z]{2}\b.*$/, "").trim(), zip, lat: g.lat, lng: g.lng };
     if (S.homes.some(h => h.address.toLowerCase() === home.address.toLowerCase())) return { ok: false, msg: `${home.address} is already on the tour.` };
   }
-  S.homes.push({ id: uid(), pin: pinDay || 0, done: false, notes: "", asked: [], agent: "", phone: "", contact: "", showing: "",
+  S.homes.push({ id: uid(), pin: pinDay || 0, done: false, notes: "", asked: [], pending: !!p, addedAt: Date.now(), agent: "", phone: "", contact: "", showing: "",
     summary: "", highlights: [], concerns: [], questions: [], ...home });
   return { ok: true, msg: home.lat == null ? `Added ${home.address}, but couldn't place it on the map.` : `Added ${home.address}.`, name: home.address };
 }
@@ -778,7 +801,7 @@ async function addLinks() {
     $("#addStatus").textContent = `Finding ${p.address} (${i + 1} of ${lines.length})...`;
     const g = await geocode(`${p.address.replace(/ #.*/, "")}, ${p.city}, ${p.state} ${p.zip}`);
     if (!g) noLoc.push(p.address);
-    S.homes.push({ id: uid(), pin: 0, done: false, notes: "", asked: [], ...p, lat: g ? g.lat : null, lng: g ? g.lng : null,
+    S.homes.push({ id: uid(), pin: 0, done: false, notes: "", asked: [], pending: true, addedAt: Date.now(), ...p, lat: g ? g.lat : null, lng: g ? g.lng : null,
       agent: "", phone: "", contact: "", showing: "", summary: "", highlights: [], concerns: [], questions: [] });
     added++;
     await sleep(1000); // geocoder asks for 1 request per second
@@ -790,6 +813,7 @@ async function addLinks() {
   $("#addStatus").textContent = msg;
   S.manual = { 1: null, 2: null };
   replan();
+  if (added) flagForDetails();
 }
 
 /* ---------- rendering ---------- */
@@ -964,7 +988,7 @@ function tlItem(x, day, next) {
         <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
       ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : `<span class="pill warn">No phone yet</span>`}
       ${rmBtn}
-    </div>` : `<div class="agent"><span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>${rmBtn}</div>`;
+    </div>` : `<div class="agent">${h.pending && !h.photo ? `<span class="pill" style="flex:1 1 auto;justify-self:start">Getting details… usually within 15 min</span>` : `<span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>`}${rmBtn}</div>`;
   return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
     <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
     <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
@@ -1111,7 +1135,7 @@ function openSheet(id) {
       ${S.settings.days === 2 && !h.done ? `<button class="btn" data-move="${h.id}" data-to="${day === 1 ? 2 : 1}">Move to Day ${day === 1 ? 2 : 1}</button>` : ""}
       <button class="btn rm" data-remove="${h.id}">Remove from tour</button>
     </div>
-    ${!filled ? `<div class="note-sample">Summary, concerns and questions aren't filled in for this home yet. Send the Redfin links to Claude and ask to fill in the tour app.</div>` : ""}
+    ${!filled ? `<div class="note-sample">${h.pending ? "Getting the photos, agent, summary, concerns, questions and assumable notes. They appear here automatically, usually within 15 minutes." : "Details aren't filled in for this home. Add it from its Redfin link and they fill in automatically."}</div>` : ""}
     ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
     ${asmBlock(h)}
     ${(() => { const kv = [["Year built", h.yearBuilt], ["Lot", h.lot], ["Yard", h.yard], ["Parking", h.parking], ["HOA", h.hoa], ["Days on market", h.dom], ["Open house", h.openHouse], ["MLS #", h.mls], ["Neighborhood", h.area]].filter(x => x[1] !== undefined && x[1] !== null && x[1] !== "");
@@ -1281,7 +1305,7 @@ async function addFromDay() {
   S.lockDays = true;
   const r = await addHome(v, S.settings.days === 2 ? day : 0);
   $("#dayAddStatus").textContent = r.ok ? `${r.msg} The schedule was re-planned. Tap the home to add the agent's phone.` : r.msg;
-  if (r.ok) { $("#dayAddInput").value = ""; await recompute(); }
+  if (r.ok) { $("#dayAddInput").value = ""; await recompute(); flagForDetails(); }
 }
 $("#dayAddGo").onclick = addFromDay;
 $("#dayAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addFromDay(); } });
