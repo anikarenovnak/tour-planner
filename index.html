@@ -224,15 +224,15 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
           </div>
           <label class="f">Starting point
             <div class="row" style="flex-wrap:nowrap">
-              <input type="text" id="startAddr" placeholder="Address or place">
-              <button class="btn small" id="setStart" style="flex:0 0 auto">Find</button>
+              <input type="text" id="startAddr" placeholder="Street address, city, ZIP" autocomplete="street-address">
+              <button class="btn small" id="setStart" style="flex:0 0 auto">Set</button>
             </div>
           </label>
           <label class="chk"><input type="checkbox" id="sameEnd"> Return to the starting point</label>
           <label class="f" id="endWrap">Return destination
             <div class="row" style="flex-wrap:nowrap">
-              <input type="text" id="endAddr" placeholder="Address or place">
-              <button class="btn small" id="setEnd" style="flex:0 0 auto">Find</button>
+              <input type="text" id="endAddr" placeholder="Street address, city, ZIP" autocomplete="street-address">
+              <button class="btn small" id="setEnd" style="flex:0 0 auto">Set</button>
             </div>
           </label>
           <div class="status muted" id="placeStatus"></div>
@@ -534,6 +534,17 @@ function parseRedfin(url) {
   return { url: url.split("?")[0], state: state.toUpperCase(), city: citySlug.replace(/-/g, " "), zip, address };
 }
 async function geocode(q) {
+  // 1) ArcGIS (best for house addresses), 2) OpenStreetMap, 3) Photon; retry without unit/suite
+  const tries = [q, q.replace(/\s*(#|apt\.?|unit|suite|ste\.?|spc)\s*[\w-]+/i, "")].filter((x, i, a) => a.indexOf(x) === i);
+  for (const t of tries) { const g = await geocodeOnce(t); if (g) return g; }
+  return null;
+}
+async function geocodeOnce(q) {
+  try {
+    const r = await fetch(`https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&countryCode=USA&outFields=Match_addr&SingleLine=${encodeURIComponent(q)}`);
+    const j = await r.json(); const c = j.candidates && j.candidates[0];
+    if (c && c.score >= 80) return { lat: c.location.y, lng: c.location.x, label: c.address };
+  } catch (e) {}
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(q)}`);
     const j = await r.json();
@@ -550,7 +561,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function addLinks() {
   const lines = $("#links").value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
   if (!lines.length) { $("#addStatus").textContent = "Paste at least one Redfin link."; return; }
-  if (S.isSample) { S.homes = []; S.manual = { 1: null, 2: null }; S.assign = {}; S.isSample = false; }
+  if (S.isSample) {
+    S.homes = []; S.manual = { 1: null, 2: null }; S.assign = {}; S.isSample = false;
+    if (S.settings.start && S.settings.start.label === SAMPLE_TOUR.start.label) { S.settings.start = null; $("#placeStatus").textContent = "Type your starting address above."; }
+  }
   let added = 0, bad = [], noLoc = [];
   for (const [i, line] of lines.entries()) {
     const p = parseRedfin(line);
@@ -899,18 +913,25 @@ document.addEventListener("change", e => {
 
 async function setPlace(which) {
   const inp = which === "start" ? $("#startAddr") : $("#endAddr");
-  const q = inp.value.trim(); if (!q) return;
+  let q = inp.value.trim(); if (!q) return;
+  const cur = S.settings[which];
+  if (cur && cur.label === q) return; // unchanged
+  const rf = parseRedfin(q); // a pasted Redfin link still works: use its address
+  if (rf) { q = `${rf.address}, ${rf.city}, ${rf.state} ${rf.zip}`.trim(); inp.value = q; }
+  const what = which === "start" ? "Starting point" : "Return destination";
   $("#placeStatus").textContent = "Finding that address...";
   const g = await geocode(q);
-  if (!g) { $("#placeStatus").textContent = "Couldn't find that address. Try adding the city and ZIP."; return; }
+  if (!g) { $("#placeStatus").textContent = `Couldn't find "${q}". Check the spelling and add the city and ZIP.`; return; }
   S.settings[which] = { label: q, lat: g.lat, lng: g.lng };
-  $("#placeStatus").textContent = `${which === "start" ? "Starting point" : "Return destination"} set.`;
+  $("#placeStatus").textContent = `${what} set: ${g.label}`;
   S.manual = { 1: null, 2: null }; replan();
 }
 $("#setStart").onclick = () => setPlace("start");
 $("#setEnd").onclick = () => setPlace("end");
-$("#startAddr").addEventListener("keydown", e => { if (e.key === "Enter") setPlace("start"); });
-$("#endAddr").addEventListener("keydown", e => { if (e.key === "Enter") setPlace("end"); });
+$("#startAddr").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); setPlace("start"); } });
+$("#endAddr").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); setPlace("end"); } });
+$("#startAddr").addEventListener("change", () => setPlace("start"));
+$("#endAddr").addEventListener("change", () => setPlace("end"));
 $("#addLinks").onclick = addLinks;
 $("#goDay1").onclick = () => { S.tab = "day1"; save(); render(); scrollTo(0, 0); };
 $("#loadSample").onclick = () => { S = freshState(); S.tab = "setup"; replan(); };
