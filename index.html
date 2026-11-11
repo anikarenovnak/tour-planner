@@ -44,6 +44,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tab{border:0;background:none;padding:14px 12px;cursor:pointer;color:var(--muted);font-family:var(--f-head);font-size:15px;border-bottom:2px solid transparent;white-space:nowrap}
 .tab[aria-selected="true"]{color:var(--head);border-color:var(--gold)}
 .tabs{align-items:center}
+.sync{margin-left:8px;font:500 10.5px var(--f-body);letter-spacing:.04em;text-transform:none;color:var(--ok);white-space:nowrap}
+.sync[data-state="offline"]{color:var(--warn)}.sync[data-state="saving"],.sync[data-state="connecting"]{color:var(--muted)}
 .setupbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--gold);background:var(--card);color:var(--gold-ink);border-radius:99px;padding:6px 14px;font:500 14px var(--f-head);cursor:pointer;white-space:nowrap}
 .setupbtn[aria-selected="true"]{background:var(--gold);color:var(--on-gold)}
 .clearbtn{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:99px;padding:6px 12px;font:13px var(--f-body);cursor:pointer;white-space:nowrap}
@@ -187,6 +189,9 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .rm{color:var(--muted);font-size:12px;padding:2px 6px}
 .rm.armed{color:var(--danger);font-weight:500}
 .stop-top{display:flex;gap:12px;align-items:start}
+.cardnote{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:13px;white-space:pre-wrap;cursor:text}
+.cardnote b{font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);display:block}
+.noteedit{display:grid;gap:6px}.noteedit textarea{min-height:70px}
 .stop{grid-template-columns:minmax(0,1fr);min-width:0}
 .stop .pill{margin-bottom:3px}
 .thumb{width:96px;height:72px;flex:none;border-radius:8px;object-fit:cover;background:var(--gold-soft);display:block}
@@ -210,7 +215,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="brand"><b>Valenne</b> · <span id="brandName">Tour Day Planner</span></div>
+    <div class="brand"><b>Valenne</b> · <span id="brandName">Tour Day Planner</span> <span id="syncState" class="sync" hidden></span></div>
     <nav class="tabs" role="tablist" id="tabs"></nav>
   </div>
 </header>
@@ -313,7 +318,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
         <div class="toolbar" id="dayToolbar"></div>
         <ol class="olist" id="dayOrder" hidden></ol>
         <div class="addbox" id="dayAdd">
-          <button class="btn ghost small" id="dayAddToggle" style="justify-self:start;padding-inline:0">+ Add a home to this day</button>
+          <button class="btn gold small" id="dayAddToggle" style="justify-self:start">+ Add a home to this day</button>
           <div id="dayAddForm" hidden class="stack" style="gap:8px">
             <div class="row">
               <input type="text" id="dayAddInput" placeholder="Paste a Redfin link or type an address">
@@ -347,10 +352,10 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 
 <dialog class="sheet" id="shareDlg"><div class="sheet-in">
   <div class="sheet-head"><div><div class="eyebrow">Share this schedule</div><h3>Send your tour</h3></div><button class="close" data-closeshare aria-label="Close">×</button></div>
-  <p style="margin:0">Anyone who opens this link sees your schedule exactly as it is now: homes, days, order, times, check-offs and notes. They can edit it on their phone, and send it back with their own Share link.</p>
+  <p style="margin:0" id="shareIntro">Anyone who opens this link sees this same schedule and can edit it. Changes show up on everyone's phone within a few seconds: homes, days, order, times, check-offs and notes.</p>
   <textarea id="shareLink" rows="4" readonly style="font-size:12px"></textarea>
   <div class="actions"><button class="btn gold" data-copyshare>Copy link</button><span class="status muted small" id="shareStatus"></span></div>
-  <p class="muted small" style="margin:0">Edits don't sync between phones. Each Share link is a snapshot of that moment.</p>
+  <p class="muted small" style="margin:0" id="shareFoot">Anyone with the link can edit, so only send it to people on the tour.</p>
 </div></dialog>
 <dialog class="sheet" id="sheet"><div class="sheet-in" id="sheetIn"></div></dialog>
 
@@ -395,7 +400,67 @@ async function loadTourFile() {
 const freshState = () => TOUR_DATA ? stateFrom(TOUR_DATA) : sampleState();
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+/* ---------- live sync (Firebase Realtime Database) ---------- */
+const DB = ""; // set to the Firebase Realtime Database URL
+let LIVE = DB && TOUR ? TOUR : "";
+const CLIENT = Math.random().toString(36).slice(2);
+let lastSent = "", pushT = null, es = null, applying = false;
+const sharedPart = st => { const o = JSON.parse(JSON.stringify(st)); delete o.tab; delete o.mapDay; delete o.sharedIn; return o; };
+function setSync(state) {
+  const el = document.getElementById("syncState"); if (!el) return;
+  el.hidden = !LIVE;
+  el.textContent = { ok: "Live · synced", saving: "Live · saving…", offline: "Offline · changes saved on this phone", connecting: "Live · connecting…" }[state] || "";
+  el.dataset.state = state;
+}
+async function pushLive() {
+  if (!LIVE) return;
+  const cmp = JSON.stringify(sharedPart(S));
+  if (cmp === lastSent) return;
+  setSync("saving");
+  try {
+    const r = await fetch(`${DB}/tours/${LIVE}.json`, { method: "PUT", body: JSON.stringify({ ...sharedPart(S), _by: CLIENT, _at: Date.now() }) });
+    if (!r.ok) throw new Error(r.status);
+    lastSent = cmp; setSync("ok");
+  } catch (e) { setSync("offline"); clearTimeout(pushT); pushT = setTimeout(pushLive, 5000); }
+}
+function normalize(d) {
+  const base = defaults();
+  const o = { ...base, ...d };
+  o.settings = { ...base.settings, ...(d.settings || {}) };
+  o.settings.dayStart = [0, 1].map(i => (d.settings && d.settings.dayStart && d.settings.dayStart[i]) || "10:00");
+  o.settings.dates = [0, 1].map(i => (d.settings && d.settings.dates && d.settings.dates[i]) || "");
+  if (!("end" in (d.settings || {}))) o.settings.end = null;
+  if (!("start" in (d.settings || {}))) o.settings.start = null;
+  o.homes = (Array.isArray(d.homes) ? d.homes : Object.values(d.homes || {})).filter(Boolean).map(h => ({ asked: [], highlights: [], concerns: [], questions: [], notes: "", ...h }));
+  o.manual = { 1: (d.manual && d.manual[1]) || null, 2: (d.manual && d.manual[2]) || null };
+  o.assign = d.assign || {};
+  delete o._by; delete o._at;
+  return o;
+}
+function applyRemote(d) {
+  if (!d || d._by === CLIENT) return;
+  const next = normalize(d);
+  const cmp = JSON.stringify(sharedPart(next));
+  if (cmp === JSON.stringify(sharedPart(S))) { lastSent = cmp; return; }
+  lastSent = cmp;
+  S = { ...next, tab: S.tab, mapDay: S.mapDay };
+  applying = true; save(); applying = false;
+  recompute();
+}
+function listenLive() {
+  if (es) es.close();
+  setSync("connecting");
+  es = new EventSource(`${DB}/tours/${LIVE}.json`);
+  es.addEventListener("put", e => { setSync("ok"); try { const m = JSON.parse(e.data); if (m.path === "/") applyRemote(m.data); else loadLive().then(applyRemote); } catch (err) {} });
+  es.addEventListener("patch", () => loadLive().then(applyRemote));
+  es.onerror = () => setSync("offline");
+  es.onopen = () => setSync("ok");
+}
+async function loadLive() { try { const r = await fetch(`${DB}/tours/${LIVE}.json`, { cache: "no-store" }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  if (LIVE && !applying) { clearTimeout(pushT); pushT = setTimeout(pushLive, 400); }
+}
 
 /* ---------- time helpers ---------- */
 const toMin = t => { const [h, m] = (t || "10:00").split(":").map(Number); return h * 60 + m; };
@@ -620,9 +685,20 @@ async function unpackState(str) {
   return JSON.parse(await new Response(ds).text());
 }
 async function openShare() {
-  const snap = JSON.parse(JSON.stringify(S)); delete snap.tab; delete snap.mapDay;
-  const link = location.origin + location.pathname + location.search + "#s=" + await packState(snap);
+  let link;
+  if (DB) {
+    if (!LIVE) { // start a new live tour for this schedule
+      LIVE = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => b.toString(16).padStart(2, "0")).join("");
+      history.replaceState(null, "", location.pathname + "?tour=" + LIVE);
+      S.isSample = false; lastSent = ""; await pushLive(); listenLive();
+    }
+    link = location.origin + location.pathname + "?tour=" + LIVE;
+  } else {
+    const snap = JSON.parse(JSON.stringify(S)); delete snap.tab; delete snap.mapDay;
+    link = location.origin + location.pathname + location.search + "#s=" + await packState(snap);
+  }
   $("#shareLink").value = link; $("#shareStatus").textContent = "";
+  if (!DB) { $("#shareIntro").textContent = "Anyone who opens this link sees your schedule exactly as it is now. They can edit it on their phone and send it back with their own Share link."; $("#shareFoot").textContent = "Edits don't sync between phones. Each Share link is a snapshot of that moment."; }
   $("#shareDlg").showModal();
 }
 function clearSampleIfNeeded() {
@@ -779,10 +855,11 @@ function renderDay(day) {
     ${st.days === 2 ? `<span class="muted small">Move homes between days from any home's details.</span>` : ""}
     ${usingFallback ? `<span class="pill warn">Drive times estimated (offline)</span>` : ""}`;
   renderOrderList($("#dayOrder"), day);
-  $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("");
+  $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("") +
+    `<div style="padding:14px 0 0 82px"><button class="btn gold small" data-addmore>+ Add another home</button></div>`;
 }
 
-let EDIT = null, PLACEMSG = "";
+let EDIT = null, PLACEMSG = "", NOTE_EDIT = null;
 const sel = (attr, val, opts) => `<select ${attr}>${opts.map(([v, l]) => `<option value="${v}" ${String(v) === String(val) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
 function lunchForm() {
   const st = S.settings;
@@ -833,7 +910,7 @@ function tlItem(x, day, next) {
   const tm = fmt(x.arrive);
   const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : ""].filter(Boolean).join("<span class='muted'>·</span>");
   const phone = telDigits(h.phone);
-  const rmBtn = `<button class="btn ghost rm" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button>`;
+  const rmBtn = `${NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn ghost rm" data-note="${h.id}">Add note</button>`}<button class="btn ghost rm" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button>`;
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
       <div class="who">${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}${phone ? ` · ${prettyPhone(h.phone)}` : ""}
         <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
@@ -849,6 +926,9 @@ function tlItem(x, day, next) {
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
       ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
+      ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
+          <button class="btn small gold" data-notedone="${h.id}" style="justify-self:start">Save note</button></div>`
+        : h.notes ? `<div class="cardnote" data-note="${h.id}" title="Tap to edit"><b>Notes</b>${esc(h.notes)}</div>` : ""}
       ${agentLine}
     </div></div></div>`;
 }
@@ -1019,7 +1099,7 @@ function render() {
 /* ---------- events ---------- */
 document.addEventListener("click", e => { if (e.target.closest("[data-closeshare]") || e.target === $("#shareDlg")) $("#shareDlg").close(); });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1028,6 +1108,9 @@ document.addEventListener("click", async e => {
   if (t.id === "toggleOrder") { $("#dayOrder").hidden = !$("#dayOrder").hidden; render(); return; }
   if (t.dataset.close != null) { $("#sheet").close(); return; }
   if (t.dataset.open) { openSheet(t.dataset.open); return; }
+  if (t.dataset.note) { NOTE_EDIT = t.dataset.note; render(); const ta = document.getElementById("note-" + NOTE_EDIT); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } return; }
+  if (t.dataset.notedone) { const ta = document.getElementById("note-" + t.dataset.notedone); const h = S.homes.find(x => x.id === t.dataset.notedone); if (ta && h) h.notes = ta.value.trim(); NOTE_EDIT = null; save(); render(); return; }
+  if (t.hasAttribute("data-addmore")) { $("#dayAddForm").hidden = false; $("#dayAdd").scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => $("#dayAddInput").focus(), 300); return; }
   if (t.hasAttribute("data-share")) { openShare(); return; }
   if (t.hasAttribute("data-dismissshared")) { S.sharedIn = false; save(); render(); return; }
   if (t.hasAttribute("data-copyshare")) {
@@ -1038,7 +1121,7 @@ document.addEventListener("click", async e => {
   }
   if (t.hasAttribute("data-clearall")) {
     if (!t.classList.contains("armed")) {
-      t.classList.add("armed"); t.textContent = "Tap again to clear everything";
+      t.classList.add("armed"); t.textContent = LIVE ? "Tap again to clear for everyone" : "Tap again to clear everything";
       setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = "Clear all"; } }, 3500);
       return;
     }
@@ -1165,7 +1248,14 @@ setInterval(() => { if (S && [1, 2].some(isLive)) recompute(); }, 60000);
       history.replaceState(null, "", location.pathname + location.search);
     } catch (err) { console.warn("Couldn't open the shared schedule", err); }
   }
+  if (LIVE) {
+    setSync("connecting");
+    const remote = await loadLive();
+    if (remote) { const tab = (S && S.tab) || "day1"; S = { ...normalize(remote), tab }; lastSent = JSON.stringify(sharedPart(S)); }
+    else if (!TOUR_DATA && !(S && S.settings)) { LIVE = ""; } // unknown tour id
+  }
   if (!S || !S.settings) { S = freshState(); if (TOUR_DATA) S.tab = "day1"; }
+  if (LIVE) { save(); listenLive(); }
   if (TOUR_DATA) { $("#loadSample").textContent = "Start this tour over"; document.title = (TOUR_DATA.name || "Tour") + " · Tour Day Planner"; }
   if (TOUR && !TOUR_DATA) $("#addStatus").textContent = "Couldn't load that tour link, so the sample tour is showing.";
   render();
