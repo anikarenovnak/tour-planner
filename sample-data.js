@@ -6,6 +6,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Glendale/2566-E-Chevy-Chase-Dr-91206/home/22680142",
       address: "2566 E Chevy Chase Dr", city: "Glendale", zip: "91206", area: "Chevy Chase Estates",
+      photo: "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/377/genMid.26991377_2.jpg",
       lat: 34.1619109, lng: -118.2105408, price: 1895000, beds: 4, baths: 5, sqft: 3123,
       agent: "Andrea Shink", brokerage: "Compass", contact: "Kayla (showings)", phone: "3105969763",
       showing: "Text Kayla to book showings.",
@@ -17,6 +18,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Sherman-Oaks/15373-Valley-Vista-Blvd-91403/home/4912343",
       address: "15373 Valley Vista Blvd", city: "Sherman Oaks", zip: "91403", area: "Sherman Oaks",
+      photo: "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/263/genMid.26106263_0.jpg",
       lat: 34.1486553, lng: -118.4662270, price: 2999000, beds: 5, baths: 5, sqft: 4508,
       agent: "Michael Bergin", brokerage: "Compass", contact: "Michael Bergin", phone: "3106000715",
       showing: "Text or call the agent.",
@@ -28,6 +30,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Los-Angeles/1132-Chantilly-Rd-90077/home/6829703",
       address: "1132 Chantilly Rd", city: "Los Angeles", zip: "90077", area: "Bel Air",
+      photo: "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/169/genMid.26997169_1.jpg",
       lat: 34.0924319, lng: -118.4570905, price: 2599000, beds: 3, baths: 3, sqft: 2531,
       agent: "Jonathan Butler", brokerage: "Douglas Elliman", contact: "Jonathan Butler", phone: "3103109280",
       showing: "Call the agent.",
@@ -39,6 +42,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Los-Angeles/1225-S-Cloverdale-Ave-90019/home/6913066",
       address: "1225 S Cloverdale Ave", city: "Los Angeles", zip: "90019", area: "Miracle Mile",
+      photo: "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/629/genMid.26104629_0.jpg",
       lat: 34.0485693, lng: -118.3513879, price: 2245000, beds: 4, baths: 4, sqft: 2599,
       agent: "Tanya Baron", brokerage: "Pardee Properties", contact: "Tanya Baron", phone: "3104866334",
       showing: "Call or text the agent.",
@@ -50,6 +54,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/El-Segundo/526-E-Maple-Ave-90245/home/6646221",
       address: "526 E Maple Ave", city: "El Segundo", zip: "90245", area: "El Segundo",
+      photo: "https://ssl.cdn-redfin.com/photo/45/mbpaddedwide/436/genMid.SB26195436_0.jpg",
       lat: 33.9268261, lng: -118.4101810, price: 2650000, beds: 3, baths: 3, sqft: 1963,
       agent: "Regina M Hoffman", brokerage: "eXp Realty", contact: "Regina M Hoffman", phone: "3108645347",
       showing: "Call or text the agent.",
@@ -61,6 +66,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Santa-Barbara/2649-Dorking-Pl-93105/home/21604703",
       address: "2649 Dorking Pl", city: "Santa Barbara", zip: "93105", area: "Mission Canyon Heights",
+      photo: "https://ssl.cdn-redfin.com/photo/87/mbpaddedwide/-63/genMid.26-63_5.jpg",
       lat: 34.4505802, lng: -119.7124379, price: 3295000, beds: 4, baths: 3, sqft: 2932,
       agent: "Confirm listing agent", brokerage: "", contact: "", phone: "",
       showing: "Santa Barbara MLS: book directly with the listing agent.",
@@ -72,6 +78,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Santa-Barbara/1625-Sycamore-Canyon-Rd-93108/home/21605357",
       address: "1625 Sycamore Canyon Rd", city: "Santa Barbara", zip: "93108", area: "Montecito",
+      photo: "https://ssl.cdn-redfin.com/photo/87/mbpaddedwide/926/genMid.26-1926_5.jpg",
       lat: 34.4383445, lng: -119.6764772, price: 1749000, beds: 2, baths: 2, sqft: 1559,
       agent: "Confirm listing agent", brokerage: "", contact: "", phone: "",
       showing: "Santa Barbara MLS: confirm the listing agent.",
@@ -83,6 +90,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Malibu/2915-Valmere-Dr-90265/home/6854441",
       address: "2915 Valmere Dr", city: "Malibu", zip: "90265", area: "Malibu",
+      photo: "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/465/genMid.26672465_3.jpg",
       lat: 34.0450046, lng: -118.7401071, price: 2595000, beds: 3, baths: 4, sqft: 2109,
       agent: "Shelly Yrigoyen", brokerage: "Sotheby's", contact: "Shelly Yrigoyen", phone: "3109220082",
       showing: "Appointment only.",
@@ -94,6 +102,7 @@ window.SAMPLE_TOUR = {
     {
       url: "https://www.redfin.com/CA/Malibu/4370-Hillview-Dr-90265/home/6855799",
       address: "4370 Hillview Dr", city: "Malibu", zip: "90265", area: "Malibu",
+      photo: "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/351/genMid.26985351_0.jpg",
       lat: 34.045741, lng: -118.7759041, price: 1895000, beds: 4, baths: 3, sqft: 2768,
       agent: "David Berg", brokerage: "Compass", contact: "David Berg", phone: "",
       showing: "Showing requests by email only (address in MLS).",

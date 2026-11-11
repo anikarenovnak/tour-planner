@@ -43,6 +43,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
 .tab{border:0;background:none;padding:14px 12px;cursor:pointer;color:var(--muted);font-family:var(--f-head);font-size:15px;border-bottom:2px solid transparent;white-space:nowrap}
 .tab[aria-selected="true"]{color:var(--head);border-color:var(--gold)}
+.tabs{align-items:center}
+.setupbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--gold);background:var(--card);color:var(--gold-ink);border-radius:99px;padding:6px 14px;font:500 14px var(--f-head);cursor:pointer;white-space:nowrap}
+.setupbtn[aria-selected="true"]{background:var(--gold);color:var(--on-gold)}
+.clearbtn{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:99px;padding:6px 12px;font:13px var(--f-body);cursor:pointer;white-space:nowrap}
+.clearbtn:hover{border-color:var(--danger);color:var(--danger)}
+.clearbtn.armed{background:var(--danger);border-color:var(--danger);color:#fff}
+.tabsep{width:1px;height:22px;background:var(--line);margin-inline:6px;flex:none}
+@media (max-width:640px){.tabs{flex-wrap:wrap;overflow:visible;gap:6px;padding-top:8px}.tabsep{flex-basis:100%;height:0;margin:0}.tab{padding:10px 10px 12px}}
 .tab .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
 @media (max-width:640px){.top .wrap{gap:0}.brand{width:100%;padding-top:10px}.tabs{margin-left:-8px;width:calc(100% + 8px)}}
 
@@ -174,6 +182,19 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .asm ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13.5px}
 .pill.no{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 .oh{color:var(--d1);font-weight:500}
+.addbox{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:grid;gap:8px;background:var(--card)}
+.addbox .row{flex-wrap:nowrap}
+.rm{color:var(--muted);font-size:12px;padding:2px 6px}
+.rm.armed{color:var(--danger);font-weight:500}
+.stop-top{display:flex;gap:12px;align-items:start}
+.stop{grid-template-columns:minmax(0,1fr);min-width:0}
+.stop .pill{margin-bottom:3px}
+.thumb{width:96px;height:72px;flex:none;border-radius:8px;object-fit:cover;background:var(--gold-soft);display:block}
+@media (max-width:520px){.thumb{width:76px;height:60px}}
+.cardhead{display:flex;justify-content:space-between;align-items:start;gap:8px}
+.editf{display:grid;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.editf .row{flex-wrap:nowrap}
+.plain.editing{border-style:solid;border-color:var(--gold)}
 .qlist{list-style:none;padding:0!important}
 .qlist label{display:flex;gap:8px;align-items:start;cursor:pointer}
 .qlist input{margin-top:3px;accent-color:var(--gold-ink);width:16px;height:16px;flex:none}
@@ -291,6 +312,16 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
         <div id="dayBanner"></div>
         <div class="toolbar" id="dayToolbar"></div>
         <ol class="olist" id="dayOrder" hidden></ol>
+        <div class="addbox" id="dayAdd">
+          <button class="btn ghost small" id="dayAddToggle" style="justify-self:start;padding-inline:0">+ Add a home to this day</button>
+          <div id="dayAddForm" hidden class="stack" style="gap:8px">
+            <div class="row">
+              <input type="text" id="dayAddInput" placeholder="Paste a Redfin link or type an address">
+              <button class="btn gold small" id="dayAddGo" style="flex:0 0 auto">Add</button>
+            </div>
+            <div class="status muted small" id="dayAddStatus"></div>
+          </div>
+        </div>
         <div class="tl" id="timeline"></div>
       </div>
       <div class="daymapcol" id="dayMapCol"></div>
@@ -314,6 +345,13 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
   </section>
 </main>
 
+<dialog class="sheet" id="shareDlg"><div class="sheet-in">
+  <div class="sheet-head"><div><div class="eyebrow">Share this schedule</div><h3>Send your tour</h3></div><button class="close" data-closeshare aria-label="Close">×</button></div>
+  <p style="margin:0">Anyone who opens this link sees your schedule exactly as it is now: homes, days, order, times, check-offs and notes. They can edit it on their phone, and send it back with their own Share link.</p>
+  <textarea id="shareLink" rows="4" readonly style="font-size:12px"></textarea>
+  <div class="actions"><button class="btn gold" data-copyshare>Copy link</button><span class="status muted small" id="shareStatus"></span></div>
+  <p class="muted small" style="margin:0">Edits don't sync between phones. Each Share link is a snapshot of that moment.</p>
+</div></dialog>
 <dialog class="sheet" id="sheet"><div class="sheet-in" id="sheetIn"></div></dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -427,7 +465,7 @@ function assignDays() {
   const st = S.settings, homes = S.homes.filter(h => h.lat != null);
   const res = new Map();
   if (st.days === 1) { homes.forEach(h => res.set(h.id, 1)); return res; }
-  const anyDone = homes.some(h => h.done);
+  const anyDone = homes.some(h => h.done) || S.lockDays; // keep homes on their day once the tour is underway or edited on a day tab
   const fixed = [], free = [];
   homes.forEach(h => {
     const d = h.done ? h.doneDay : h.pin || (anyDone ? S.assign[h.id] : 0);
@@ -568,13 +606,55 @@ async function geocodeOnce(q) {
   return null;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function packState(obj) {
+  const data = new TextEncoder().encode(JSON.stringify(obj));
+  const cs = new Blob([data]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+  const buf = new Uint8Array(await new Response(cs).arrayBuffer());
+  let out = ""; for (let i = 0; i < buf.length; i += 8192) out += String.fromCharCode(...buf.subarray(i, i + 8192));
+  return btoa(out).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+async function unpackState(str) {
+  const bin = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return JSON.parse(await new Response(ds).text());
+}
+async function openShare() {
+  const snap = JSON.parse(JSON.stringify(S)); delete snap.tab; delete snap.mapDay;
+  const link = location.origin + location.pathname + location.search + "#s=" + await packState(snap);
+  $("#shareLink").value = link; $("#shareStatus").textContent = "";
+  $("#shareDlg").showModal();
+}
+function clearSampleIfNeeded() {
+  if (!S.isSample) return;
+  S.homes = []; S.manual = { 1: null, 2: null }; S.assign = {}; S.isSample = false;
+  if (S.settings.start && S.settings.start.label === SAMPLE_TOUR.start.label) { S.settings.start = null; $("#placeStatus").textContent = "Type your starting address above."; }
+}
+// Adds one home from a Redfin link or a typed address. Returns a message.
+async function addHome(line, pinDay) {
+  const p = parseRedfin(line);
+  let home;
+  if (p) {
+    if (S.homes.some(h => h.url === p.url)) return { ok: false, msg: `${p.address} is already on the tour.` };
+    const g = await geocode(`${p.address.replace(/ #.*/, "")}, ${p.city}, ${p.state} ${p.zip}`);
+    home = { ...p, lat: g ? g.lat : null, lng: g ? g.lng : null };
+  } else {
+    if (/^https?:/i.test(line)) return { ok: false, msg: "That link isn't a Redfin home link. Paste the Redfin link or type the address." };
+    const g = await geocode(line);
+    if (!g) return { ok: false, msg: `Couldn't find "${line}". Add the city and ZIP.` };
+    const parts = line.split(",").map(x => x.trim());
+    const zip = (line.match(/\b\d{5}\b/) || [""])[0];
+    home = { url: `https://www.redfin.com/search?q=${encodeURIComponent(line)}`, address: parts[0], city: (parts[1] || "").replace(/\b[A-Z]{2}\b.*$/, "").trim(), zip, lat: g.lat, lng: g.lng };
+    if (S.homes.some(h => h.address.toLowerCase() === home.address.toLowerCase())) return { ok: false, msg: `${home.address} is already on the tour.` };
+  }
+  S.homes.push({ id: uid(), pin: pinDay || 0, done: false, notes: "", asked: [], agent: "", phone: "", contact: "", showing: "",
+    summary: "", highlights: [], concerns: [], questions: [], ...home });
+  return { ok: true, msg: home.lat == null ? `Added ${home.address}, but couldn't place it on the map.` : `Added ${home.address}.`, name: home.address };
+}
 async function addLinks() {
   const lines = $("#links").value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
   if (!lines.length) { $("#addStatus").textContent = "Paste at least one Redfin link."; return; }
-  if (S.isSample) {
-    S.homes = []; S.manual = { 1: null, 2: null }; S.assign = {}; S.isSample = false;
-    if (S.settings.start && S.settings.start.label === SAMPLE_TOUR.start.label) { S.settings.start = null; $("#placeStatus").textContent = "Type your starting address above."; }
-  }
+  clearSampleIfNeeded();
   let added = 0, bad = [], noLoc = [];
   for (const [i, line] of lines.entries()) {
     const p = parseRedfin(line);
@@ -614,11 +694,14 @@ function smsLink(h, day, time) {
 }
 
 function renderTabs() {
-  const tabs = [["setup", "Setup"], ["day1", "Day 1"]];
+  const tabs = [["day1", "Day 1"]];
   if (S.settings.days === 2) tabs.push(["day2", "Day 2"]);
   tabs.push(["map", "Map"]);
   if (S.tab === "day2" && S.settings.days === 1) S.tab = "day1";
-  $("#tabs").innerHTML = tabs.map(([k, l]) => {
+  const gear = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
+  $("#tabs").innerHTML = `<button class="setupbtn" data-tab="setup" aria-selected="${S.tab === "setup"}">${gear}Setup</button>
+    <button class="clearbtn" data-share>Share</button>
+    <button class="clearbtn" data-clearall>Clear all</button><span class="tabsep" aria-hidden="true"></span>` + tabs.map(([k, l]) => {
     const dot = k.startsWith("day") ? `<span class="dot" style="background:${dayColor(+k[3])}"></span>` : "";
     return `<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${dot}${l}</button>`;
   }).join("");
@@ -669,7 +752,7 @@ function renderDay(day) {
   $("#view-day").style.setProperty("--dc", dayColor(day));
   $("#dayEyebrow").textContent = st.dates[day - 1] ? new Date(st.dates[day - 1] + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : `Day ${day}`;
   $("#dayTitle").textContent = `Day ${day} tour`;
-  if (!st.start) { $("#timeline").innerHTML = `<div class="empty">Add a starting point on the Setup tab to build the schedule.</div>`; $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = ""; return; }
+  if (!st.start) { $("#timeline").innerHTML = placeCard({ type: "start", t: toMin(st.dayStart[day - 1]), place: null }, day); $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = `<div class="banner"><b>Add your starting address</b> <span class="muted">to build the schedule.</span></div>`; return; }
   if (!plan || !plan.order.length) { $("#timeline").innerHTML = `<div class="empty">No homes on this day yet.</div>`; $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = ""; return; }
   const s = dayStats(plan);
   $("#dayStats").innerHTML = `
@@ -686,21 +769,55 @@ function renderDay(day) {
       <div class="small muted">Leave by ${fmt(drive.t)} · ${dur(drive.min)} drive${live ? " · times update live as you check homes off" : ""}</div></div>
       <a class="btn small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(next.h))}">Directions</a></div>`;
   } else $("#dayBanner").innerHTML = `<div class="banner"><b>All homes done.</b> <span class="muted">Head back: ${esc(shortPlace(endPoint()))}</span></div>`;
+  if (S.sharedIn) $("#dayBanner").insertAdjacentHTML("afterbegin", `<div class="banner" style="background:var(--bg);border:1px solid var(--line)"><div style="flex:1;min-width:0" class="small">This schedule was shared with you. Your edits stay on this phone; tap <b>Share</b> at the top to send your version back.</div><button class="btn ghost small" data-dismissshared>OK</button></div>`);
   const manual = !!S.manual[day];
   $("#dayToolbar").innerHTML = `
     <button class="btn small" id="toggleOrder">${$("#dayOrder").hidden ? "Change order" : "Done reordering"}</button>
     ${manual ? `<span class="pill">Your order</span><button class="btn ghost small" data-reopt="${day}">Re-optimize</button>` : `<span class="pill ok">Fastest route</span>`}
+    ${st.lunchMin ? "" : `<button class="btn ghost small" data-addlunch>+ Add lunch</button>`}
+    ${st.days === 2 && S.lockDays ? `<button class="btn ghost small" data-rebalance>Rebalance days</button>` : ""}
     ${st.days === 2 ? `<span class="muted small">Move homes between days from any home's details.</span>` : ""}
     ${usingFallback ? `<span class="pill warn">Drive times estimated (offline)</span>` : ""}`;
   renderOrderList($("#dayOrder"), day);
   $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("");
 }
 
+let EDIT = null, PLACEMSG = "";
+const sel = (attr, val, opts) => `<select ${attr}>${opts.map(([v, l]) => `<option value="${v}" ${String(v) === String(val) ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+function lunchForm() {
+  const st = S.settings;
+  return `<div class="editf grid2">
+    <label class="f">Lunch length${sel('data-set="lunchMin"', st.lunchMin, [[0, "No lunch"], [30, "30 min"], [45, "45 min"], [60, "1 hour"], [90, "1.5 hours"]])}</label>
+    <label class="f">Lunch around<input type="time" data-set="lunchAt" value="${st.lunchAt}"></label></div>`;
+}
+function placeCard(x, day) {
+  const st = S.settings, isStart = x.type === "start", key = isStart ? "start" : "end", open = EDIT === key || (isStart && !st.start);
+  let form = "";
+  if (open && isStart) form = `<div class="editf">
+      <label class="f">Starting address
+        <div class="row"><input type="text" class="tl-addr" id="tlAddr-start" data-which="start" value="${esc(st.start ? st.start.label : "")}" placeholder="Street address, city, ZIP">
+        <button class="btn small gold" data-setplace="start" style="flex:0 0 auto">Set</button></div></label>
+      <div class="grid2">
+        <label class="f">Day ${day} start time<input type="time" data-start="${day}" value="${st.dayStart[day - 1]}"></label>
+        <label class="f">Day ${day} date (optional)<input type="date" data-date="${day}" value="${st.dates[day - 1] || ""}"></label>
+        <label class="f">Time at each home${sel('data-set="showMin"', st.showMin, [[15, "15 min"], [20, "20 min"], [30, "30 min"], [45, "45 min"], [60, "1 hour"]])}</label>
+        <label class="f">Traffic${sel('data-set="traffic"', st.traffic, [[1, "Light"], [1.25, "Normal LA traffic"], [1.5, "Heavy"]])}</label>
+      </div>
+      ${st.days === 2 ? `<div class="muted small">The starting address is used for both days; the start time is just for Day ${day}.</div>` : ""}
+      <div class="status muted small" id="tlStatus">${esc(PLACEMSG)}</div></div>`;
+  if (open && !isStart) form = `<div class="editf">
+      <label class="chk"><input type="checkbox" data-sameend ${st.sameEnd ? "checked" : ""}> Return to the starting point</label>
+      ${st.sameEnd ? "" : `<label class="f">Return address
+        <div class="row"><input type="text" class="tl-addr" id="tlAddr-end" data-which="end" value="${esc(st.end ? st.end.label : "")}" placeholder="Street address, city, ZIP">
+        <button class="btn small gold" data-setplace="end" style="flex:0 0 auto">Set</button></div></label>`}
+      <div class="status muted small" id="tlStatus">${esc(PLACEMSG)}</div></div>`;
+  const label = x.place ? shortPlace(x.place) : "Add a starting address";
+  return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node flag"></span></div>
+    <div class="tl-body"><div class="plain ${open ? "editing" : ""}"><div class="cardhead"><div style="min-width:0"><div class="eyebrow">${isStart ? `Start · ${fmt(x.t)}` : "Back"}</div><div class="a1">${esc(label)}</div></div>
+      ${isStart && !st.start ? "" : `<button class="btn ghost small" data-edit="${key}">${open ? "Done" : "Edit"}</button>`}</div>${form}</div></div></div>`;
+}
 function tlItem(x, day, next) {
-  if (x.type === "start" || x.type === "end") {
-    return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node flag"></span></div>
-      <div class="tl-body"><div class="plain"><div class="eyebrow">${x.type === "start" ? "Start" : "Back"}</div><div class="a1">${esc(shortPlace(x.place))}</div></div></div></div>`;
-  }
+  if (x.type === "start" || x.type === "end") return placeCard(x, day);
   if (x.type === "drive") {
     if (x.min < 0.5) return "";
     return `<div class="tl-item drive-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node drive"></span></div>
@@ -708,23 +825,27 @@ function tlItem(x, day, next) {
   }
   if (x.type === "lunch") {
     return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}<small>${fmt(x.end)}</small></div><div class="tl-rail"><span class="node lunch">L</span></div>
-      <div class="tl-body"><div class="lunch-card"><div><div class="eyebrow">Lunch break</div><div>${dur(x.end - x.t)} near ${esc(x.lastCity || "the last home")}</div></div></div></div></div>`;
+      <div class="tl-body"><div class="lunch-card" style="display:block"><div class="cardhead"><div><div class="eyebrow">Lunch break</div><div>${dur(x.end - x.t)} near ${esc(x.lastCity || "the last home")}</div></div>
+        <button class="btn ghost small" data-edit="lunch">${EDIT === "lunch" ? "Done" : "Edit"}</button></div>
+        ${EDIT === "lunch" ? lunchForm() : ""}</div></div></div>`;
   }
   const h = x.h, isNext = next && next.h.id === h.id;
   const tm = fmt(x.arrive);
   const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : ""].filter(Boolean).join("<span class='muted'>·</span>");
   const phone = telDigits(h.phone);
+  const rmBtn = `<button class="btn ghost rm" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button>`;
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
       <div class="who">${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}${phone ? ` · ${prettyPhone(h.phone)}` : ""}
         <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
       ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : `<span class="pill warn">No phone yet</span>`}
-    </div>` : `<div class="agent"><span class="pill warn">Agent not added yet</span></div>`;
+      ${rmBtn}
+    </div>` : `<div class="agent"><span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>${rmBtn}</div>`;
   return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
     <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
     <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:start">
-        <div style="min-width:0"><div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
-        ${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}
+      <div class="stop-top">${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}
+        <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
       ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
@@ -854,6 +975,7 @@ function openSheet(id) {
       <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on Redfin</a>
       <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(h))}">Directions</a>
       ${S.settings.days === 2 && !h.done ? `<button class="btn" data-move="${h.id}" data-to="${day === 1 ? 2 : 1}">Move to Day ${day === 1 ? 2 : 1}</button>` : ""}
+      <button class="btn rm" data-remove="${h.id}">Remove from tour</button>
     </div>
     ${!filled ? `<div class="note-sample">Summary, concerns and questions aren't filled in for this home yet. Send the Redfin links to Claude and ask to fill in the tour app.</div>` : ""}
     ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
@@ -895,18 +1017,56 @@ function render() {
 }
 
 /* ---------- events ---------- */
+document.addEventListener("click", e => { if (e.target.closest("[data-closeshare]") || e.target === $("#shareDlg")) $("#shareDlg").close(); });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
-  if (t.dataset.days) { S.settings.days = +t.dataset.days; S.manual = { 1: null, 2: null }; replan(); return; }
+  if (t.dataset.days) { S.settings.days = +t.dataset.days; S.manual = { 1: null, 2: null }; S.lockDays = false; replan(); return; }
   if (t.dataset.mapday != null) { S.mapDay = +t.dataset.mapday; save(); render(); return; }
   if (t.id === "toggleOrder") { $("#dayOrder").hidden = !$("#dayOrder").hidden; render(); return; }
   if (t.dataset.close != null) { $("#sheet").close(); return; }
   if (t.dataset.open) { openSheet(t.dataset.open); return; }
+  if (t.hasAttribute("data-share")) { openShare(); return; }
+  if (t.hasAttribute("data-dismissshared")) { S.sharedIn = false; save(); render(); return; }
+  if (t.hasAttribute("data-copyshare")) {
+    const v = $("#shareLink").value;
+    try { await navigator.clipboard.writeText(v); $("#shareStatus").textContent = "Copied. Paste it in a text or email."; }
+    catch (err) { $("#shareLink").select(); $("#shareStatus").textContent = "Press and hold the link to copy it."; }
+    return;
+  }
+  if (t.hasAttribute("data-clearall")) {
+    if (!t.classList.contains("armed")) {
+      t.classList.add("armed"); t.textContent = "Tap again to clear everything";
+      setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = "Clear all"; } }, 3500);
+      return;
+    }
+    const name = S.tourName;
+    S = defaults(); S.tourName = name; S.tab = "setup"; EDIT = null;
+    $("#links").value = ""; $("#addStatus").textContent = "Cleared. Paste Redfin links to start a new tour.";
+    $("#placeStatus").textContent = ""; $("#startAddr").value = ""; $("#endAddr").value = "";
+    if ($("#sheet").open) $("#sheet").close();
+    replan(); scrollTo(0, 0); return;
+  }
+  if (t.dataset.edit) { EDIT = EDIT === t.dataset.edit ? null : t.dataset.edit; PLACEMSG = ""; render(); return; }
+  if (t.dataset.setplace) { await setPlace(t.dataset.setplace, $(`#tlAddr-${t.dataset.setplace}`), $("#tlStatus")); return; }
+  if (t.hasAttribute("data-addlunch")) { S.settings.lunchMin = 45; EDIT = "lunch"; replan(); return; }
+  if (t.hasAttribute("data-rebalance")) { S.lockDays = false; S.assign = {}; S.manual = { 1: null, 2: null }; replan(); return; }
   if (t.dataset.reopt) { S.manual[+t.dataset.reopt] = null; replan(); return; }
-  if (t.dataset.remove) { S.homes = S.homes.filter(h => h.id !== t.dataset.remove); delete S.assign[t.dataset.remove]; replan(); return; }
+  if (t.dataset.remove) {
+    if (!t.classList.contains("armed")) {
+      const old = t.textContent; t.classList.add("armed"); t.textContent = "Tap again to remove";
+      setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = old; } }, 3000);
+      return;
+    }
+    const id = t.dataset.remove;
+    if (!t.closest("#homelist")) S.lockDays = true;
+    S.homes = S.homes.filter(h => h.id !== id); delete S.assign[id];
+    for (const d of [1, 2]) if (S.manual[d]) S.manual[d] = S.manual[d].filter(x => x !== id);
+    if ($("#sheet").open) $("#sheet").close();
+    await recompute(); return;
+  }
   const h = S.homes.find(x => x.id === (t.dataset.done || t.dataset.undone || t.dataset.move));
   if (!h) return;
   if (t.dataset.done) {
@@ -922,10 +1082,14 @@ document.addEventListener("click", async e => {
     map && map.closePopup(); await recompute(); if ($("#sheet").open) openSheet(h.id); return;
   }
 });
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.classList && e.target.classList.contains("tl-addr")) { e.preventDefault(); e.target.blur(); return; } });
 document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches(".stop[data-open]")) { e.preventDefault(); openSheet(e.target.dataset.open); } });
 
 document.addEventListener("change", e => {
   const el = e.target, st = S.settings;
+  if (el.dataset.set) { const k = el.dataset.set; st[k] = k === "lunchAt" ? (el.value || "12:30") : +el.value; replan(); return; }
+  if (el.hasAttribute("data-sameend")) { st.sameEnd = el.checked; S.manual = { 1: null, 2: null }; replan(); return; }
+  if (el.classList.contains("tl-addr")) { setPlace(el.dataset.which, el, $("#tlStatus")); return; }
   if (el.dataset.pin) { const h = S.homes.find(x => x.id === el.dataset.pin); h.pin = +el.value; S.manual = { 1: null, 2: null }; replan(); return; }
   if (el.dataset.date) { st.dates[el.dataset.date - 1] = el.value; replan(); return; }
   if (el.dataset.start) { st.dayStart[el.dataset.start - 1] = el.value || "10:00"; replan(); return; }
@@ -943,19 +1107,21 @@ document.addEventListener("change", e => {
   if (el.id === "sameEnd") { st.sameEnd = el.checked; replan(); return; }
 });
 
-async function setPlace(which) {
-  const inp = which === "start" ? $("#startAddr") : $("#endAddr");
+async function setPlace(which, inp, statusEl) {
+  inp = inp || (which === "start" ? $("#startAddr") : $("#endAddr"));
+  const status = statusEl || $("#placeStatus");
   let q = inp.value.trim(); if (!q) return;
   const cur = S.settings[which];
   if (cur && cur.label === q) return; // unchanged
   const rf = parseRedfin(q); // a pasted Redfin link still works: use its address
   if (rf) { q = `${rf.address}, ${rf.city}, ${rf.state} ${rf.zip}`.trim(); inp.value = q; }
   const what = which === "start" ? "Starting point" : "Return destination";
-  $("#placeStatus").textContent = "Finding that address...";
+  status.textContent = "Finding that address...";
   const g = await geocode(q);
-  if (!g) { $("#placeStatus").textContent = `Couldn't find "${q}". Check the spelling and add the city and ZIP.`; return; }
+  if (!g) { status.textContent = `Couldn't find "${q}". Check the spelling and add the city and ZIP.`; return; }
   S.settings[which] = { label: q, lat: g.lat, lng: g.lng };
-  $("#placeStatus").textContent = `${what} set: ${g.label}`;
+  status.textContent = `${what} set: ${g.label}`;
+  if (statusEl) PLACEMSG = status.textContent;
   S.manual = { 1: null, 2: null }; replan();
 }
 $("#setStart").onclick = () => setPlace("start");
@@ -965,6 +1131,19 @@ $("#endAddr").addEventListener("keydown", e => { if (e.key === "Enter") { e.prev
 $("#startAddr").addEventListener("change", () => setPlace("start"));
 $("#endAddr").addEventListener("change", () => setPlace("end"));
 $("#addLinks").onclick = addLinks;
+$("#dayAddToggle").onclick = () => { $("#dayAddForm").hidden = !$("#dayAddForm").hidden; if (!$("#dayAddForm").hidden) $("#dayAddInput").focus(); };
+async function addFromDay() {
+  const v = $("#dayAddInput").value.trim(); if (!v) return;
+  const day = +S.tab[3] || 1;
+  clearSampleIfNeeded();
+  $("#dayAddStatus").textContent = "Finding it...";
+  S.lockDays = true;
+  const r = await addHome(v, S.settings.days === 2 ? day : 0);
+  $("#dayAddStatus").textContent = r.ok ? `${r.msg} The schedule was re-planned. Tap the home to add the agent's phone.` : r.msg;
+  if (r.ok) { $("#dayAddInput").value = ""; await recompute(); }
+}
+$("#dayAddGo").onclick = addFromDay;
+$("#dayAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addFromDay(); } });
 $("#goDay1").onclick = () => { S.tab = "day1"; save(); render(); scrollTo(0, 0); };
 $("#loadSample").onclick = () => { S = freshState(); S.tab = "setup"; replan(); };
 let clearArmed = false;
@@ -978,6 +1157,14 @@ setInterval(() => { if (S && [1, 2].some(isLive)) recompute(); }, 60000);
 
 (async () => {
   if (TOUR) TOUR_DATA = await loadTourFile();
+  if (location.hash.startsWith("#s=")) {
+    try {
+      const shared = await unpackState(location.hash.slice(3));
+      S = { ...defaults(), ...shared, tab: "day1", sharedIn: true };
+      save();
+      history.replaceState(null, "", location.pathname + location.search);
+    } catch (err) { console.warn("Couldn't open the shared schedule", err); }
+  }
   if (!S || !S.settings) { S = freshState(); if (TOUR_DATA) S.tab = "day1"; }
   if (TOUR_DATA) { $("#loadSample").textContent = "Start this tour over"; document.title = (TOUR_DATA.name || "Tour") + " · Tour Day Planner"; }
   if (TOUR && !TOUR_DATA) $("#addStatus").textContent = "Couldn't load that tour link, so the sample tour is showing.";
