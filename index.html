@@ -186,6 +186,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .asm ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13.5px}
 .pill.no{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
 .oh{color:var(--d1);font-weight:500}
+.yardline{color:var(--ok);font-size:12.5px}
 .addbox{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:grid;gap:8px;background:var(--card)}
 .addbox .row{flex-wrap:nowrap}
 .rm{color:var(--muted);font-size:12px;padding:2px 6px}
@@ -910,7 +911,9 @@ function tlItem(x, day, next) {
   }
   const h = x.h, isNext = next && next.h.id === h.id;
   const tm = fmt(x.arrive);
-  const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : ""].filter(Boolean).join("<span class='muted'>·</span>");
+  const lotTxt = h.lot ? String(h.lot).replace(/\s*\(.*\)$/, "") : "";
+  const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : "", lotTxt ? `${esc(lotTxt)} lot` : ""].filter(Boolean).join("<span class='muted'>·</span>")
+    + (h.yard ? `</div><div class="facts yardline"><span>Yard: ${esc(h.yard)}</span>` : "");
   const phone = telDigits(h.phone);
   const rmBtn = `${NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn ghost rm" data-note="${h.id}">Add note</button>`}<button class="btn ghost rm" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button>`;
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
@@ -1062,7 +1065,7 @@ function openSheet(id) {
     ${!filled ? `<div class="note-sample">Summary, concerns and questions aren't filled in for this home yet. Send the Redfin links to Claude and ask to fill in the tour app.</div>` : ""}
     ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
     ${asmBlock(h)}
-    ${(() => { const kv = [["Year built", h.yearBuilt], ["Lot", h.lot], ["Parking", h.parking], ["HOA", h.hoa], ["Days on market", h.dom], ["Open house", h.openHouse], ["MLS #", h.mls], ["Neighborhood", h.area]].filter(x => x[1] !== undefined && x[1] !== null && x[1] !== "");
+    ${(() => { const kv = [["Year built", h.yearBuilt], ["Lot", h.lot], ["Yard", h.yard], ["Parking", h.parking], ["HOA", h.hoa], ["Days on market", h.dom], ["Open house", h.openHouse], ["MLS #", h.mls], ["Neighborhood", h.area]].filter(x => x[1] !== undefined && x[1] !== null && x[1] !== "");
       return kv.length ? `<div class="sec"><h4>Property details</h4><dl class="kv">${kv.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl></div>` : ""; })()}
     <div class="sec"><h4>Key things</h4>${list(h.highlights)}</div>
     <div class="sec concerns"><h4>Concerns</h4>${list(h.concerns)}</div>

@@ -61,6 +61,7 @@
     "Well or city water? Septic or sewer?",
     "Fire insurance cost?"
    ],
+   "yard": "6+ acres of land with barn and outbuildings",
    "assumable": {
     "status": "confirmed",
     "label": "VA loan · 2.25%",
@@ -118,7 +119,8 @@
     "Pool fence or safety cover for the kids?",
     "Any offers at 49 days?",
     "Roof age?"
-   ]
+   ],
+   "yard": "Fenced grass yard, mature trees, pool"
   },
   {
    "url": "https://www.redfin.com/CA/Glendale/3600-Shannon-Way-91206/home/7167233",
@@ -164,7 +166,8 @@
     "How much grass is in the backyard?",
     "Pool fence?",
     "Roof and plumbing age?"
-   ]
+   ],
+   "yard": "Front lawn; backyard with pool and patio"
   },
   {
    "url": "https://www.redfin.com/CA/Glendale/3941-Karen-Lynn-Dr-91206/home/7168356",
@@ -209,7 +212,8 @@
     "Why hasn't it sold? Any price flexibility?",
     "What was remodeled, and when?",
     "Any offers fallen through?"
-   ]
+   ],
+   "yard": "Backyard on a 0.32-acre lot (check flat space)"
   },
   {
    "url": "https://www.redfin.com/CA/Glendale/1523-Colina-Dr-91208/home/7143994",
@@ -254,7 +258,8 @@
     "Why has it sat 122 days? Any price cuts?",
     "Pool fence?",
     "Systems and roof age?"
-   ]
+   ],
+   "yard": "Gated resort-style backyard with pool"
   },
   {
    "url": "https://www.redfin.com/CA/Glendale/1517-Idlewood-Rd-91202/home/7151958",
@@ -300,7 +305,8 @@
     "Can the double lot be split or built on?",
     "Any inspection reports or permits on file?",
     "Offer date or reviewing as they come?"
-   ]
+   ],
+   "yard": "Huge double-lot yard, front and rear patios"
   },
   {
    "url": "https://www.redfin.com/CA/Glendale/401-Brockmont-Dr-91202/home/7152819",
@@ -346,7 +352,8 @@
     "Who did the renovation, and is there a warranty?",
     "Any offers so far? Room on price?",
     "Pool equipment age?"
-   ]
+   ],
+   "yard": "Private backyard with pool and patio"
   },
   {
    "url": "https://www.redfin.com/CA/Los-Angeles/3588-Mandeville-Canyon-Rd-90049/home/6859279",
@@ -396,7 +403,8 @@
     "Fire insurance cost?",
     "Offer date?",
     "Pool fence?"
-   ]
+   ],
+   "yard": "Grassy yard, pool, citrus trees"
   },
   {
    "url": "https://www.redfin.com/CA/Los-Angeles/3443-Mandeville-Canyon-Rd-90049/home/6859521",
@@ -441,7 +449,8 @@
     "Garage or just parking?",
     "Fire insurance cost?",
     "Permits for the pool and renovation?"
-   ]
+   ],
+   "yard": "Lush lawns, pool, built-in BBQ"
   },
   {
    "url": "https://www.redfin.com/CA/Los-Angeles/1132-Chantilly-Rd-90077/home/6829703",
@@ -501,7 +510,8 @@
     ],
     "source": "Listing / county record"
    },
-   "pin": 2
+   "pin": 2,
+   "yard": "Large grassy backyard and patios"
   },
   {
    "url": "https://www.redfin.com/CA/Los-Angeles/3024-Manning-Ave-90064/home/6797630",
@@ -549,6 +559,7 @@
     "Any inspections or termite report?",
     "Offers so far?"
    ],
+   "yard": "Large backyard with trees, covered patio",
    "assumable": {
     "status": "possible",
     "label": "VA loan",
@@ -606,7 +617,8 @@
     "Permits for the renovation?",
     "Pool and spa equipment age?",
     "Offer date?"
-   ]
+   ],
+   "yard": "Pool, spa, deck and sports-court space"
   },
   {
    "url": "https://www.redfin.com/CA/Los-Angeles/3221-Military-Ave-90034/home/6751166",
@@ -652,7 +664,8 @@
     "Permits for the renovation?",
     "Room to add a bedroom or ADU?",
     "Roof and systems age?"
-   ]
+   ],
+   "yard": "Expansive yard on a 9,660 sq ft lot"
   }
  ]
 }
