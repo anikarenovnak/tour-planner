@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tour Day Planner</title>
+<title>Property Touring</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
@@ -38,8 +38,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* top bar + tabs */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--card);border-bottom:1px solid var(--line)}
 .top .wrap{display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:wrap}
-.brand{font-family:var(--f-head);letter-spacing:.18em;font-size:12px;text-transform:uppercase;color:var(--head);white-space:nowrap}
-.brand b{font-weight:600}
+.brand{display:grid;gap:2px;padding-block:10px;min-width:0}
+.wordmark{font-family:var(--f-head);font-weight:500;font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--head);line-height:1.1;white-space:nowrap}
+.subline{font-family:var(--f-head);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:640px){.wordmark{font-size:19px;letter-spacing:.16em}.subline{font-size:11px}}
 .tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
 .tab{border:0;background:none;padding:14px 12px;cursor:pointer;color:var(--muted);font-family:var(--f-head);font-size:15px;border-bottom:2px solid transparent;white-space:nowrap}
 .tab[aria-selected="true"]{color:var(--head);border-color:var(--gold)}
@@ -101,7 +103,7 @@ label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
 .stats b{font-family:var(--f-head);font-weight:500;font-size:17px;color:var(--head)}
 .stats span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .daygrid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px}
-.daymapcol{display:none;position:sticky;top:76px;height:calc(100vh - 110px)}
+.daymapcol{display:none;position:sticky;top:86px;height:calc(100vh - 120px)}
 @media (min-width:1000px){.daygrid{grid-template-columns:minmax(0,1fr) minmax(0,.9fr)}.daymapcol{display:block}}
 
 .daymapcol .mapbox{height:100%}
@@ -215,7 +217,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="brand"><b>Valenne</b> · <span id="brandName">Tour Day Planner</span> <span id="syncState" class="sync" hidden></span></div>
+    <div class="brand"><div class="wordmark">Valenne Real Estate</div><div class="subline">Property Touring<span id="brandName"></span> <span id="syncState" class="sync" hidden></span></div></div>
     <nav class="tabs" role="tablist" id="tabs"></nav>
   </div>
 </header>
@@ -1085,7 +1087,7 @@ function openSheet(id) {
 /* ---------- main render ---------- */
 function render() {
   renderTabs();
-  $("#brandName").textContent = S.tourName || "Tour Day Planner";
+  $("#brandName").textContent = S.tourName ? " · " + S.tourName : "";
   const t = S.tab;
   $("#view-setup").hidden = t !== "setup";
   $("#view-day").hidden = !t.startsWith("day");
@@ -1256,7 +1258,7 @@ setInterval(() => { if (S && [1, 2].some(isLive)) recompute(); }, 60000);
   }
   if (!S || !S.settings) { S = freshState(); if (TOUR_DATA) S.tab = "day1"; }
   if (LIVE) { save(); listenLive(); }
-  if (TOUR_DATA) { $("#loadSample").textContent = "Start this tour over"; document.title = (TOUR_DATA.name || "Tour") + " · Tour Day Planner"; }
+  if (TOUR_DATA) { $("#loadSample").textContent = "Start this tour over"; document.title = (TOUR_DATA.name || "Tour") + " · Property Touring"; }
   if (TOUR && !TOUR_DATA) $("#addStatus").textContent = "Couldn't load that tour link, so the sample tour is showing.";
   render();
   recompute();

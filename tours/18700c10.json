@@ -1,0 +1,703 @@
+{
+ "name": "LA Westside & Glendale tour",
+ "days": 2,
+ "dates": [
+  "2026-11-13",
+  "2026-11-14"
+ ],
+ "dayStart": [
+  "10:00",
+  "10:00"
+ ],
+ "start": {
+  "label": "500 Santa Monica Blvd, Santa Monica, CA 90401",
+  "lat": 34.017093014515,
+  "lng": -118.494209406487
+ },
+ "homes": [
+  {
+   "url": "https://www.redfin.com/CA/Glendale/2566-E-Chevy-Chase-Dr-91206/home/22680142",
+   "address": "2566 E Chevy Chase Dr",
+   "city": "Glendale",
+   "zip": "91206",
+   "area": "Chevy Chase Estates",
+   "lat": 34.1619109,
+   "lng": -118.2105408,
+   "price": 1895000,
+   "beds": 4,
+   "baths": 5,
+   "sqft": 3123,
+   "yearBuilt": 2018,
+   "lot": "0.4 acres",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 47,
+   "mls": "26991377",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/377/genMid.26991377_2.jpg",
+   "agent": "Andrea Shink",
+   "brokerage": "Compass",
+   "contact": "Kayla Shink",
+   "phone": "3105969763",
+   "agents": [
+    "Andrea Shink · (310) 749-6440",
+    "Kayla Shink · (310) 596-9763 (books showings)"
+   ],
+   "showing": "Text Kayla to book.",
+   "summary": "Custom 2018 Mediterranean in the Chevy Chase foothills with canyon views, an elevator, and a private bath for every bedroom. The price was cut and it's been sitting 47 days, so there's room to talk.",
+   "highlights": [
+    "Built 2018 on 0.4 acres with canyon and mountain views",
+    "Elevator between all three levels",
+    "All 4 bedrooms have their own bathroom",
+    "Big kitchen island, balcony off the living area",
+    "EV charger, 2-car garage",
+    "Price cut from $2,119,000",
+    "Glenoaks Elementary (9/10)"
+   ],
+   "concerns": [
+    "Three levels on a hillside: lots of stairs if the elevator ever fails",
+    "Upper yard is terraced hillside, not a flat lawn",
+    "Seller likely to decline the loan assumption (see assumable notes)"
+   ],
+   "questions": [
+    "Will the seller actually consider an assumption, or only a regular sale?",
+    "Who is the loan servicer, and what's the exact balance and rate?",
+    "Elevator age and service records?",
+    "Any offers since the price cut?",
+    "Are inspection reports or disclosures available?"
+   ],
+   "pin": 1,
+   "assumable": {
+    "status": "possible",
+    "label": "VA loan",
+    "notes": [
+     "County record: VA loan of $1,275,000 recorded Dec 16, 2020, lender Fairway Independent Mort; no later refinance on record.",
+     "Rate: 3.11% (estimate).",
+     "Balance: about $1.11M (estimate).",
+     "Cash needed above the loan: about $787K at the list price.",
+     "Agent says the VA loan can technically be assumed, but the seller will likely decline; confirming.",
+     "Non-veteran buyer: agent is checking."
+    ],
+    "source": "Assumable-loan list"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Glendale/1517-Idlewood-Rd-91202/home/7151958",
+   "address": "1517 Idlewood Rd",
+   "city": "Glendale",
+   "zip": "91202",
+   "area": "Glenwood / Kenneth Village",
+   "lat": 34.172606,
+   "lng": -118.2760292,
+   "price": 1980000,
+   "beds": 3,
+   "baths": 3,
+   "sqft": 2256,
+   "yearBuilt": 1931,
+   "lot": "0.41 acres (double lot)",
+   "parking": "Detached 2-car garage",
+   "hoa": "None",
+   "dom": 6,
+   "mls": "GD26231817",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/45/mbpaddedwide/817/genMid.GD26231817_0.jpg",
+   "agent": "Levon Matti",
+   "brokerage": "Re/Max Tri-City Realty",
+   "contact": "Levon Matti",
+   "phone": "8186362055",
+   "pin": 1,
+   "showing": "Call or text Levon.",
+   "summary": "Single-level 1931 home on a rare 18,043 sq ft double lot near Kenneth Village. Priced as a remodel-or-rebuild opportunity, walkable to cafés and Brand Park.",
+   "highlights": [
+    "Double lot: 0.41 acres, huge yard",
+    "Single level, 3 bed / 3 bath",
+    "Walk to Kenneth Village shops and Brand Library & Park",
+    "Mark Keppel Elementary (9/10)",
+    "Just listed (6 days)"
+   ],
+   "concerns": [
+    "Needs work: marketed for buyers who want to remodel or build",
+    "Only 7 photos: interior condition unclear",
+    "Detached garage and sheds: check permits"
+   ],
+   "questions": [
+    "What condition are the roof, plumbing, electrical and foundation in?",
+    "Can the double lot be split or built on?",
+    "Any inspection reports or permits on file?",
+    "Offer date or reviewing as they come?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Glendale/401-Brockmont-Dr-91202/home/7152819",
+   "address": "401 Brockmont Dr",
+   "city": "Glendale",
+   "zip": "91202",
+   "area": "Rossmoyne / Brockmont",
+   "lat": 34.173104,
+   "lng": -118.26254,
+   "price": 2299000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 2575,
+   "yearBuilt": 1956,
+   "lot": "10,514 sq ft",
+   "parking": "Attached 2-car garage",
+   "hoa": "None",
+   "dom": 42,
+   "mls": "GD26207960",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/45/mbpaddedwide/960/genMid.GD26207960_0.jpg",
+   "agent": "Tereza Toramanyan",
+   "brokerage": "Coldwell Banker Hallmark",
+   "contact": "Tereza Toramanyan",
+   "phone": "8182818812",
+   "pin": 1,
+   "showing": "Call or text Tereza.",
+   "summary": "Fully renovated in 2026, with a newly redone pool, views and two main-level bedrooms with private entrances. Move-in ready in one of Glendale's best neighborhoods.",
+   "highlights": [
+    "Renovated 2026: new HVAC, electrical, 200-amp panel, Milgard windows",
+    "Newly renovated pool, mature cypress trees, patio",
+    "Two main-level bedrooms with private entrances",
+    "Taj Mahal stone kitchen with induction cooktop",
+    "Mark Keppel Elementary (9/10)"
+   ],
+   "concerns": [
+    "Flip-style renovation: ask for permits and contractor details",
+    "42 days on market: ask about offers and price",
+    "Hillside street: check drainage"
+   ],
+   "questions": [
+    "Were permits pulled and finaled for the 2026 work?",
+    "Who did the renovation, and is there a warranty?",
+    "Any offers so far? Room on price?",
+    "Pool equipment age?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/3323-Larga-Ave-90039/home/7065562",
+   "address": "3323 Larga Ave",
+   "city": "Los Angeles",
+   "zip": "90039",
+   "area": "Atwater Village",
+   "lat": 34.1151021,
+   "lng": -118.2564533,
+   "price": 1850000,
+   "beds": 5,
+   "baths": 3.5,
+   "sqft": 2896,
+   "yearBuilt": 1923,
+   "lot": "6,752 sq ft",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 163,
+   "mls": "WS26117917",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/45/mbpaddedwide/917/genMid.WS26117917_0.jpg",
+   "agent": "Doresa Wang",
+   "brokerage": "Pinnacle Real Estate Group",
+   "contact": "Doresa Wang",
+   "phone": "6268776866",
+   "pin": 1,
+   "showing": "Call or text Doresa.",
+   "summary": "Two detached houses in the heart of Atwater Village: a 3-bed front house plus a two-story back building over a 2-car garage that could become an ADU. VA loan on the county record.",
+   "highlights": [
+    "Front house 3 bed / 2 bath (about 1,664 sq ft)",
+    "Back building: 1,232 sq ft rec space with bath, plus bonus attic; ADU potential",
+    "Backyard between the two houses",
+    "Atwater Avenue Elementary (8/10)",
+    "VA loan on county record (see assumable notes)"
+   ],
+   "concerns": [
+    "163 days on market: ask why",
+    "Back building isn't a permitted ADU yet",
+    "1923 house: check foundation, plumbing and electrical"
+   ],
+   "questions": [
+    "Is the seller open to a VA loan assumption? Balance, rate, servicer?",
+    "Would a non-veteran buyer work?",
+    "What permits exist for the back building?",
+    "Why has it sat 163 days? Any price flexibility?"
+   ],
+   "assumable": {
+    "status": "possible",
+    "label": "VA loan",
+    "notes": [
+     "County record: VA loan of $348,000 recorded Nov 11, 2020, lender Freedom Mortgage; no later refinance on record.",
+     "Rate: 3.11% (estimate).",
+     "Balance: about $302K (estimate).",
+     "Cash needed above the loan: about $1.55M at the list price.",
+     "Ani emailed the listing agent; no reply yet."
+    ],
+    "source": "Assumable-loan list"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/3750-Arbolada-Rd-90027/home/7063606",
+   "address": "3750 Arbolada Rd",
+   "city": "Los Angeles",
+   "zip": "90027",
+   "area": "Los Feliz",
+   "lat": 34.1143919,
+   "lng": -118.2741827,
+   "price": 2089000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 2357,
+   "yearBuilt": 1962,
+   "lot": "0.28 acres",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 71,
+   "mls": "26877607",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/607/genMid.26877607_5.jpg",
+   "agent": "Tracy Do",
+   "brokerage": "",
+   "contact": "Tracy Do",
+   "phone": "3238424001",
+   "pin": 1,
+   "agents": [
+    "Tracy Do · (323) 842-4001",
+    "Ryan Judd · (214) 929-6643"
+   ],
+   "showing": "Call or text Tracy.",
+   "summary": "Updated mid-century modern in Los Feliz with big views, walls of glass and an office, inside the coveted Ivanhoe Elementary boundary.",
+   "highlights": [
+    "Ivanhoe Elementary (9/10)",
+    "4 bed + separate office",
+    "Floor-to-ceiling glass, white oak floors",
+    "Fisher & Paykel kitchen with big island",
+    "Brick patio, upper deck with firepit, view deck"
+   ],
+   "concerns": [
+    "Hillside lot: check stairs, slope and drainage",
+    "71 days on market: ask about price",
+    "1962 house: check sewer line and electrical"
+   ],
+   "questions": [
+    "Any offers or price reductions so far?",
+    "What was updated, and when?",
+    "Sewer line and foundation inspections done?",
+    "How usable is the yard?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/3124-Silverado-Dr-90039/home/7062790",
+   "address": "3124 Silverado Dr",
+   "city": "Los Angeles",
+   "zip": "90039",
+   "area": "Silver Lake (Moreno Highlands)",
+   "lat": 34.1004533,
+   "lng": -118.2703178,
+   "price": 1925000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 2171,
+   "yearBuilt": 1939,
+   "lot": "9,969 sq ft (street-to-street)",
+   "parking": "2 garage spaces",
+   "hoa": "None",
+   "dom": 11,
+   "mls": "26105285",
+   "openHouse": "Sat Nov 14 & Sun Nov 15, 11:00 AM – 2:00 PM",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/285/genMid.26105285_7.jpg",
+   "agent": "Mike McGill",
+   "brokerage": "Compass",
+   "contact": "Mike McGill",
+   "phone": "3102936444",
+   "pin": 1,
+   "agents": [
+    "Mike McGill · (310) 293-6444",
+    "Ron McGill · (310) 701-0510"
+   ],
+   "showing": "Call or text Mike.",
+   "summary": "Upgraded 4-bed on a quarter-acre street-to-street lot in Silver Lake's Moreno Highlands, plus a 900 sq ft self-contained one-bedroom apartment.",
+   "highlights": [
+    "Quarter-acre street-to-street lot, very private",
+    "Extra 900 sq ft one-bedroom apartment (rental or guests)",
+    "60-ft open kitchen, dining and living area",
+    "Ivanhoe Elementary (9/10)",
+    "Open houses Sat and Sun 11-2"
+   ],
+   "concerns": [
+    "Popular and new (11 days): may get multiple offers",
+    "Is the apartment permitted?",
+    "Hillside: check stairs and drainage"
+   ],
+   "questions": [
+    "Is the one-bedroom apartment permitted?",
+    "Offer date?",
+    "What upgrades were done and when?",
+    "Parking and street access on both sides?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/1132-Chantilly-Rd-90077/home/6829703",
+   "address": "1132 Chantilly Rd",
+   "city": "Los Angeles",
+   "zip": "90077",
+   "area": "Lower Bel Air",
+   "lat": 34.0924319,
+   "lng": -118.4570905,
+   "price": 2599000,
+   "beds": 3,
+   "baths": 3,
+   "sqft": 2531,
+   "yearBuilt": 1962,
+   "lot": "0.58 acres",
+   "parking": "2-car garage",
+   "hoa": "None",
+   "dom": 29,
+   "mls": "26997169",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/169/genMid.26997169_1.jpg",
+   "agent": "Jonathan Butler",
+   "brokerage": "Douglas Elliman",
+   "contact": "Jonathan Butler",
+   "phone": "3103109280",
+   "agents": [
+    "Jonathan Butler · (310) 310-9280",
+    "Joshua Altman · (310) 819-3250"
+   ],
+   "showing": "Call Jonathan.",
+   "summary": "Single-level 1962 home in lower Bel Air on more than half an acre, with a big great room, a Wolf and Sub-Zero kitchen and a large private backyard.",
+   "highlights": [
+    "Single level, 2,531 sq ft",
+    "Over half an acre with a newly sodded lawn",
+    "Wolf and Sub-Zero kitchen with a giant island",
+    "Primary suite with fireplace, sitting area and yard access",
+    "Easy access to the Westside and Beverly Hills",
+    "Roscomare Road Elementary (10/10)"
+   ],
+   "concerns": [
+    "No loan to take over: conventional loan at 5.85%",
+    "1962 home: ask about plumbing, electrical and sewer line",
+    "High fire zone: insurance can be expensive or hard to get"
+   ],
+   "questions": [
+    "Has the seller gotten a recent fire insurance quote?",
+    "When were the roof, plumbing and electrical last updated?",
+    "Sewer line inspection done?",
+    "How much of the lot is usable, and could it be expanded?",
+    "Is there flexibility on price at 29 days?"
+   ],
+   "assumable": {
+    "status": "no",
+    "label": "Not assumable",
+    "notes": [
+     "County record: conventional loan of $1,500,000 recorded 2024 (Morgan Stanley, 5.85%). Conventional loans can't be taken over by a buyer."
+    ],
+    "source": "Listing / county record"
+   },
+   "pin": 2
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/2247-S-Canfield-Ave-90034/home/6786210",
+   "address": "2247 S Canfield Ave",
+   "city": "Los Angeles",
+   "zip": "90034",
+   "area": "Beverlywood",
+   "lat": 34.0415505,
+   "lng": -118.3910068,
+   "price": 2199000,
+   "beds": 4,
+   "baths": 3,
+   "sqft": 2105,
+   "yearBuilt": 1947,
+   "lot": "6,374 sq ft",
+   "parking": "2-car garage",
+   "hoa": "$79/mo",
+   "dom": 1,
+   "mls": "26107662",
+   "openHouse": "Thursday, Nov 12, 1:30 – 4:30 PM",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/662/genMid.26107662_0.jpg",
+   "agent": "Ben Kanani",
+   "brokerage": "United Realty Group",
+   "contact": "Ben Kanani",
+   "phone": "3108007405",
+   "pin": 2,
+   "showing": "Call or text Ben.",
+   "summary": "Brand-new listing in Beverlywood with city and hillside views, a private grassy backyard with built-in BBQ, and Castle Heights Elementary.",
+   "highlights": [
+    "Castle Heights Elementary (10/10)",
+    "Private backyard with lawn and built-in BBQ",
+    "Primary bedroom opens to the yard",
+    "Upper balcony with city-light views",
+    "Just listed (1 day)"
+   ],
+   "concerns": [
+    "Brand new: likely multiple offers",
+    "Beverlywood HOA ($79/mo) and its design rules",
+    "Kitchen is older style (granite): budget for updates"
+   ],
+   "questions": [
+    "Offer date?",
+    "What do the HOA rules cover?",
+    "Roof, plumbing and electrical age?",
+    "Any disclosures yet?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/3024-Manning-Ave-90064/home/6797630",
+   "address": "3024 Manning Ave",
+   "city": "Los Angeles",
+   "zip": "90064",
+   "area": "Cheviot Hills",
+   "lat": 34.0355239,
+   "lng": -118.4132328,
+   "price": 1999000,
+   "beds": 4,
+   "baths": 2,
+   "sqft": 2603,
+   "yearBuilt": 1941,
+   "lot": "7,151 sq ft",
+   "parking": "Attached 2-car garage",
+   "hoa": "None",
+   "dom": 30,
+   "mls": "26998569",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/569/genMid.26998569_0.jpg",
+   "agent": "Stacy Blaugrund",
+   "brokerage": "Power Brokers",
+   "contact": "Stacy Blaugrund",
+   "phone": "3106218336",
+   "pin": 2,
+   "showing": "Call or text Stacy.",
+   "summary": "Original-condition Cheviot Hills home sold as-is, with a large private backyard and the award-winning Overland Elementary. VA loan on the county record.",
+   "highlights": [
+    "Overland Avenue Elementary (10/10)",
+    "Large backyard with trees and covered patio",
+    "Original details: bay window, hardwood floors",
+    "Walk to Cheviot Hills Park and the Griffin Club",
+    "VA loan on county record (see assumable notes)"
+   ],
+   "concerns": [
+    "Sold as-is: needs restoration, budget accordingly",
+    "Fixer pricing may draw builders and investors",
+    "1941 house: check foundation, sewer, electrical"
+   ],
+   "questions": [
+    "Is the seller open to a VA loan assumption? Balance, rate, servicer?",
+    "Would a non-veteran buyer work?",
+    "Any inspections or termite report?",
+    "Offers so far?"
+   ],
+   "assumable": {
+    "status": "possible",
+    "label": "VA loan",
+    "notes": [
+     "County record: VA loan of $828,800 recorded May 25, 2021, lender Draper And Kramer Mortga; no later refinance on record.",
+     "Rate: 2.96% (estimate).",
+     "Balance: about $726K (estimate).",
+     "Cash needed above the loan: about $1.27M at the list price.",
+     "Agent not contacted yet."
+    ],
+    "source": "Assumable-loan list"
+   }
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/10340-Walavista-Rd-90064/home/6797878",
+   "address": "10340 Walavista Rd",
+   "city": "Los Angeles",
+   "zip": "90064",
+   "area": "Cheviot Hills",
+   "lat": 34.0317657,
+   "lng": -118.4121809,
+   "price": 2495000,
+   "beds": 3,
+   "baths": 4,
+   "sqft": 2120,
+   "yearBuilt": 1948,
+   "lot": "9,735 sq ft",
+   "parking": "1 space",
+   "hoa": "None",
+   "dom": 13,
+   "mls": "26105023",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/023/genMid.26105023_0.jpg",
+   "agent": "Chad Lund",
+   "brokerage": "Douglas Elliman",
+   "contact": "Chad Lund",
+   "phone": "3108012641",
+   "pin": 2,
+   "showing": "Call or text Chad.",
+   "summary": "Completely renovated traditional on a private cul-de-sac in Cheviot Hills with a resort-style backyard: heated pool and spa, deck and room for a sports court.",
+   "highlights": [
+    "Overland Avenue Elementary (10/10)",
+    "Heated pool and spa, outdoor shower, big paved area",
+    "Renovated chef's kitchen with 6-burner range",
+    "Family room with vaulted ceiling and fireplace",
+    "Quiet cul-de-sac, 9,735 sq ft lot"
+   ],
+   "concerns": [
+    "Only 1 parking space listed: confirm garage",
+    "Renovation quality and permits",
+    "Popular listing: likely competition"
+   ],
+   "questions": [
+    "Garage or just a parking pad?",
+    "Permits for the renovation?",
+    "Pool and spa equipment age?",
+    "Offer date?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/2957-Midvale-Ave-90064/home/6752524",
+   "address": "2957 Midvale Ave",
+   "city": "Los Angeles",
+   "zip": "90064",
+   "area": "Rancho Park",
+   "lat": 34.0301689,
+   "lng": -118.4221664,
+   "price": 2195000,
+   "beds": 5,
+   "baths": 3,
+   "sqft": 2950,
+   "yearBuilt": 1945,
+   "lot": "7,112 sq ft",
+   "parking": "1-car garage",
+   "hoa": "None",
+   "dom": 47,
+   "mls": "26991115",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/115/genMid.26991115_0.jpg",
+   "agent": "Bjorn Farrugia",
+   "brokerage": "Compass",
+   "contact": "Bjorn Farrugia",
+   "phone": "3109987175",
+   "pin": 2,
+   "agents": [
+    "Bjorn Farrugia · (310) 998-7175",
+    "Ali Fallahassady · (310) 591-9172"
+   ],
+   "showing": "Call or text Bjorn.",
+   "summary": "Renovated single-story home plus a permitted 3-bed / 3-bath ADU built in 2021 with solar. Great for rental income or extended family, in Clover Elementary.",
+   "highlights": [
+    "Clover Avenue Elementary (10/10)",
+    "Permitted 3 bed / 3 bath ADU (2021) with its own kitchen, laundry and solar",
+    "Newer roof, HVAC, plumbing and electrical",
+    "Near Expo Line, Century City and UCLA"
+   ],
+   "concerns": [
+    "Main house is about 1,750 sq ft; the rest is the ADU",
+    "Yard shared between two homes",
+    "Only a 1-car garage"
+   ],
+   "questions": [
+    "Is the ADU rented now, and for how much?",
+    "Is the ADU solar owned or leased?",
+    "How much private yard does the main house get?",
+    "Offers so far at 47 days?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/Los-Angeles/3221-Military-Ave-90034/home/6751166",
+   "address": "3221 Military Ave",
+   "city": "Los Angeles",
+   "zip": "90034",
+   "area": "Palms / Mar Vista border",
+   "lat": 34.0252695,
+   "lng": -118.4230315,
+   "price": 2495000,
+   "beds": 3,
+   "baths": 3,
+   "sqft": 2120,
+   "yearBuilt": 1959,
+   "lot": "9,660 sq ft",
+   "parking": "2 garage spaces",
+   "hoa": "None",
+   "dom": 4,
+   "mls": "26105890",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/40/mbpaddedwide/890/genMid.26105890_0.jpg",
+   "agent": "Harry Whelan",
+   "brokerage": "Carolwood",
+   "contact": "Harry Whelan",
+   "phone": "6507995360",
+   "pin": 2,
+   "showing": "Call or text Harry.",
+   "summary": "Turnkey, beautifully renovated home on a quiet tree-lined street with a 9,660 sq ft lot and Clover Elementary. Brand new to market.",
+   "highlights": [
+    "Clover Avenue Elementary (10/10)",
+    "Large 9,660 sq ft lot",
+    "Chef's kitchen with top appliances and island",
+    "Oak floors, designer lighting",
+    "Just listed (4 days)"
+   ],
+   "concerns": [
+    "New and popular: expect competition",
+    "Check renovation permits",
+    "Only 3 bedrooms for the price"
+   ],
+   "questions": [
+    "Offer date?",
+    "Permits for the renovation?",
+    "Room to add a bedroom or ADU?",
+    "Roof and systems age?"
+   ]
+  },
+  {
+   "url": "https://www.redfin.com/CA/El-Segundo/526-E-Maple-Ave-90245/home/6646221",
+   "address": "526 E Maple Ave",
+   "city": "El Segundo",
+   "zip": "90245",
+   "area": "El Segundo",
+   "lat": 33.9268261,
+   "lng": -118.410181,
+   "price": 2650000,
+   "beds": 3,
+   "baths": 3,
+   "sqft": 1963,
+   "yearBuilt": 1925,
+   "lot": "6,697 sq ft",
+   "parking": "Small garage + long driveway (up to 8 cars)",
+   "hoa": "None",
+   "dom": 62,
+   "mls": "SB26195436",
+   "openHouse": "None scheduled",
+   "photo": "https://ssl.cdn-redfin.com/photo/45/mbpaddedwide/436/genMid.SB26195436_0.jpg",
+   "agent": "Regina (Gina) Hoffman",
+   "brokerage": "eXp Realty",
+   "contact": "Gina Hoffman",
+   "phone": "3108645347",
+   "showing": "Call or text Gina.",
+   "summary": "Remodeled single-level home in the heart of El Segundo with top-rated schools, a detached rumpus room with a bar, a rooftop deck and solar. The agent confirmed a 2.23% VA loan.",
+   "highlights": [
+    "Single level, fully remodeled",
+    "Detached rumpus room with bar (not in the sq ft)",
+    "Rooftop deck, hot tub, synthetic turf yard",
+    "Solar panels and EV charger",
+    "El Segundo schools (10/10 high school)",
+    "Price cut from $2,749,000"
+   ],
+   "concerns": [
+    "Non-veteran buyer only at a $3,000,000 price (list is $2.65M)",
+    "A $500K second loan must be paid off at sale",
+    "Smaller home at 1,963 sq ft; small garage",
+    "Near LAX: listen for flight noise"
+   ],
+   "questions": [
+    "Would the seller take a veteran buyer at the list price?",
+    "What's behind the $3M non-veteran price: lost VA entitlement?",
+    "Who's the servicer, and how long does approval take?",
+    "Is the solar owned or leased?",
+    "How noticeable is airport noise?"
+   ],
+   "pin": 2,
+   "assumable": {
+    "status": "confirmed",
+    "label": "VA loan · 2.23%",
+    "notes": [
+     "County record: VA loan of $1,285,000 recorded Sep 8, 2020, lender Guaranteed Rate; no later refinance on record.",
+     "Other loan on record: second loan of $500,000 recorded May 15, 2026 (would need to be paid off).",
+     "Rate: 2.23% (from the listing agent).",
+     "Balance: about $1M (agent's figure).",
+     "Cash needed above the loan: about $1.65M at the list price.",
+     "Agent confirmed: VA loan at 2.23%, about $1.0M owed, 24 years left. Non-veteran buyer only at a $3,000,000 price (list is $2.65M).",
+     "Non-veteran buyer: possible, with conditions."
+    ],
+    "source": "Assumable-loan list"
+   }
+  }
+ ]
+}
