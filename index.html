@@ -202,6 +202,8 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .yardline{color:var(--ok);font-size:12.5px}
 .confrow{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13px;background:var(--bg);border-radius:8px;padding:6px 10px;cursor:default}
 .confrow .chk{font-size:13px}
+.cardacts{display:flex;gap:6px;flex-wrap:wrap}
+.cardacts .btn{padding:5px 10px}
 .timeset{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
 .timeset input{width:auto;padding:4px 6px;font-size:13px}
 .lateline{color:var(--danger);font-size:12.5px;font-weight:500}
@@ -937,9 +939,24 @@ function renderDay(day) {
 }
 
 let EDIT = null, PLACEMSG = "", NOTE_EDIT = null, LAST_REMOVED = null, toastT = null;
-function showToast(msg) {
+// The same buttons appear on each schedule card and in its expanded details.
+function moveBtn(h, day, cls) {
+  if (h.done) return "";
+  const to = S.settings.days === 1 ? 2 : (day === 1 ? 2 : 1);
+  return `<button class="${cls}" data-move="${h.id}" data-to="${to}">${S.settings.days === 1 ? "Add to Day 2" : `Move to Day ${to}`}</button>`;
+}
+function visitBtn(h, cls) {
+  return h.done ? `<button class="${cls}" data-undone="${h.id}">Undo visited</button>` : `<button class="${cls} gold" data-done="${h.id}">Mark as visited</button>`;
+}
+const dirUrl = h => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(h))}`;
+function confirmControls(h) {
+  return `<label class="chk small"><input type="checkbox" data-confirm="${h.id}" ${h.confirmed ? "checked" : ""}> Showing confirmed</label>
+    <label class="timeset">Booked time <input type="time" data-fixed="${h.id}" value="${esc(h.fixedTime || "")}" aria-label="Booked showing time for ${esc(h.address)}"></label>
+    ${h.fixedTime ? `<button class="btn ghost rm" data-clearfixed="${h.id}">Clear time</button>` : ""}`;
+}
+function showToast(msg, undo = true) {
   const el = document.getElementById("toast");
-  el.innerHTML = `<span>${esc(msg)}</span><button class="btn small" data-undo>Undo</button>`;
+  el.innerHTML = `<span>${esc(msg)}</span>${undo ? `<button class="btn small" data-undo>Undo</button>` : ""}`;
   el.hidden = false; clearTimeout(toastT); toastT = setTimeout(hideToast, 7000);
 }
 function hideToast() { const el = document.getElementById("toast"); if (el) el.hidden = true; }
@@ -1011,10 +1028,12 @@ function tlItem(x, day, next) {
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
       ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
-      <div class="confrow" data-stop>
-        <label class="chk small"><input type="checkbox" data-confirm="${h.id}" ${h.confirmed ? "checked" : ""}> Showing confirmed</label>
-        <label class="timeset">Booked time <input type="time" data-fixed="${h.id}" value="${esc(h.fixedTime || "")}" aria-label="Booked showing time for ${esc(h.address)}"></label>
-        ${h.fixedTime ? `<button class="btn ghost rm" data-clearfixed="${h.id}">Clear time</button>` : ""}
+      <div class="confrow" data-stop>${confirmControls(h)}</div>
+      <div class="cardacts" data-stop>
+        ${visitBtn(h, "btn small")}
+        ${moveBtn(h, day, "btn small")}
+        <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">Redfin</a>
+        <a class="btn small" href="${dirUrl(h)}" target="_blank" rel="noopener">Directions</a>
       </div>
       ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
       ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
@@ -1142,12 +1161,14 @@ function openSheet(id) {
     ${h.photo ? `<img class="hero" src="${esc(h.photo)}" alt="${esc(h.address)}" loading="lazy" onerror="this.remove()">` : ""}
     <div class="facts" style="font-size:14px">${[h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : ""].filter(Boolean).join(" · ")}</div>
     <div class="actions">
-      ${h.done ? `<button class="btn" data-undone="${h.id}">Undo done</button>` : `<button class="btn gold" data-done="${h.id}">Mark as visited</button>`}
+      ${visitBtn(h, "btn")}
       <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on Redfin</a>
-      <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(h))}">Directions</a>
-      ${S.settings.days === 2 && !h.done ? `<button class="btn" data-move="${h.id}" data-to="${day === 1 ? 2 : 1}">Move to Day ${day === 1 ? 2 : 1}</button>` : ""}
+      <a class="btn" target="_blank" rel="noopener" href="${dirUrl(h)}">Directions</a>
+      ${moveBtn(h, day, "btn")}
+      <button class="btn" data-note-sheet="${h.id}">Add note</button>
       <button class="btn rm" data-remove="${h.id}">Remove from tour</button>
     </div>
+    <div class="confrow">${confirmControls(h)}</div>
     ${!filled ? `<div class="note-sample">${h.pending ? "Getting the photos, agent, summary, concerns, questions and assumable notes. They appear here automatically, usually within 15 minutes." : "Details aren't filled in for this home. Add it from its Redfin link and they fill in automatically."}</div>` : ""}
     ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
     ${asmBlock(h)}
@@ -1190,7 +1211,7 @@ function render() {
 /* ---------- events ---------- */
 document.addEventListener("click", e => { if (e.target.closest("[data-closeshare]") || e.target === $("#shareDlg")) $("#shareDlg").close(); });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1228,6 +1249,7 @@ document.addEventListener("click", async e => {
   if (t.hasAttribute("data-addlunch")) { S.settings.lunchMin = 45; EDIT = "lunch"; replan(); return; }
   if (t.hasAttribute("data-rebalance")) { S.lockDays = false; S.assign = {}; S.manual = { 1: null, 2: null }; replan(); return; }
   if (t.dataset.reopt) { S.manual[+t.dataset.reopt] = null; replan(); return; }
+  if (t.dataset.noteSheet) { const ta = document.querySelector(`#sheetIn textarea[data-field="notes"]`); if (ta) { ta.scrollIntoView({ behavior: "smooth", block: "center" }); ta.focus(); } return; }
   if (t.dataset.clearfixed) { const h = S.homes.find(x => x.id === t.dataset.clearfixed); if (h) { delete h.fixedTime; h.fixedTime = ""; } await recompute(); return; }
   if (t.hasAttribute("data-undo")) {
     if (LAST_REMOVED) { const { home, index, assign } = LAST_REMOVED; S.homes.splice(Math.min(index, S.homes.length), 0, home); if (assign) S.assign[home.id] = assign; LAST_REMOVED = null; }
@@ -1255,6 +1277,7 @@ document.addEventListener("click", async e => {
   if (t.dataset.undone) { h.done = false; h.doneDay = null; h.doneMin = null; await recompute(); openSheet(h.id); return; }
   if (t.dataset.move) {
     h.pin = +t.dataset.to; S.manual = { 1: null, 2: null };
+    if (h.pin === 2 && S.settings.days === 1) { S.settings.days = 2; S.lockDays = true; showToast(`Added Day 2 with ${h.address}.`, false); }
     map && map.closePopup(); await recompute(); if ($("#sheet").open) openSheet(h.id); return;
   }
 });
