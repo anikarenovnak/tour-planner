@@ -1193,7 +1193,7 @@ function tlItem(x, day, next) {
         <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
-      ${h.assumable || h.photo || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
+      ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
       <div class="confrow" data-stop>${confirmControls(h)}</div>
       <div class="cardacts" data-stop>
         ${visitBtn(h, "btn small")}
@@ -1309,8 +1309,7 @@ function renderMapView() {
 const ASM = { confirmed: ["yes", "ok", "Assumable: agent confirmed"], advertised: ["yes", "ok", "Assumable: in the listing"],
   possible: ["maybe", "", "Possibly assumable"], no: ["no", "no", "Not assumable"] };
 function asmPill(h) {
-  const a = h.assumable;
-  if (!a) return h.photo || h.summary ? `<span class="pill no" data-tip="Your assumable-loan search (FHA, VA, USDA and adjustable loans in county records) didn't flag this home. It most likely has a regular loan or none, but it hasn't been checked one by one.">Not on your assumable list</span>` : "";
+  const a = h.assumable; if (!a) return "";
   const [, cls, word] = ASM[a.status] || ASM.possible;
   return `<span class="pill ${cls}">${esc(a.status === "no" ? word : word.split(":")[0] + " · " + a.label)}</span>`;
 }
