@@ -287,6 +287,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .btn.stopt{background:#b03a3a;color:#fff;border-color:#b03a3a}
 .livedot{width:9px;height:9px;border-radius:50%;background:var(--ok);display:inline-block;animation:pulse 1.6s infinite}
 @keyframes pulse{50%{opacity:.35}}
+button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
 </style>
 </head>
 <body>
@@ -318,7 +319,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
             <div class="row" style="align-items:center;justify-content:space-between">
               <div class="muted small" id="homeCount" style="flex:1 1 auto"></div>
               <button class="btn ghost small" id="loadSample" style="flex:0 0 auto">Load sample tour</button>
-              <button class="btn ghost small" id="clearAll" style="flex:0 0 auto">Remove all</button>
+              <button class="btn ghost small" id="clearAll" style="flex:0 0 auto" disabled aria-disabled="true" title="Turned off so homes can't be removed by accident">Remove all</button>
             </div>
             <div class="homelist" id="homelist"></div>
           </div>
@@ -1052,7 +1053,7 @@ function renderTabs() {
   const gear = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
   $("#tabs").innerHTML = `<button class="setupbtn" data-tab="setup" aria-selected="${S.tab === "setup"}">${gear}Setup</button>
     <button class="clearbtn" data-share>Share</button>
-    <button class="clearbtn" data-clearall>Clear all</button><span class="tabsep" aria-hidden="true"></span>` + tabs.map(([k, l]) => {
+    <button class="clearbtn" data-clearall disabled aria-disabled="true" title="Turned off so homes can't be cleared by accident">Clear all</button><span class="tabsep" aria-hidden="true"></span>` + tabs.map(([k, l]) => {
     const dot = k.startsWith("day") ? `<span class="dot" style="background:${dayColor(+k[3])}"></span>` : "";
     return `<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${dot}${l}</button>`;
   }).join("");
@@ -1553,6 +1554,7 @@ document.addEventListener("click", async e => {
     catch (err) { $("#shareLink").select(); $("#shareStatus").textContent = "Press and hold the link to copy it."; }
     return;
   }
+  if (t.hasAttribute("data-clearall") && t.disabled) return;
   if (t.hasAttribute("data-clearall")) {
     if (!t.classList.contains("armed")) {
       t.classList.add("armed"); t.textContent = LIVE ? "Tap again to clear for everyone" : "Tap again to clear everything";
@@ -1736,6 +1738,7 @@ $("#goDay1").onclick = () => { S.tab = "day1"; save(); render(); scrollTo(0, 0);
 $("#loadSample").onclick = () => { S = freshState(); S.tab = "setup"; replan(); };
 let clearArmed = false;
 $("#clearAll").onclick = () => {
+  if ($("#clearAll").disabled) return;
   if (!clearArmed) { clearArmed = true; $("#clearAll").textContent = "Tap again to remove all"; setTimeout(() => { clearArmed = false; $("#clearAll").textContent = "Remove all"; }, 3000); return; }
   S.homes = []; S.assign = {}; S.manual = { 1: null, 2: null }; S.isSample = false; clearArmed = false; $("#clearAll").textContent = "Remove all"; replan();
 };
