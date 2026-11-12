@@ -798,6 +798,15 @@ async function recompute() {
     const order = dayOrder(d, assignment);
     PLAN[d] = { order, items: buildDay(d, order) };
   }
+  // Planned day and showing time per home, saved with the tour so records (e.g. a client sheet) can use them.
+  // Not updated on a live tour day, when times move with the clock on each phone.
+  if (![1, 2].some(isLive)) {
+    const sched = {};
+    for (const d of [1, 2]) (PLAN[d] ? PLAN[d].items : []).forEach((x) => {
+      if (x.type === "stop") sched[x.h.id] = { day: d, date: st.dates[d - 1] || "", time: fmt(x.arrive), order: x.idx + 1 };
+    });
+    S.sched = sched;
+  }
   save(); render();
 }
 let rt; const replan = () => { clearTimeout(rt); rt = setTimeout(recompute, 60); };
