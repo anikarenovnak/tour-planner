@@ -683,7 +683,8 @@ function buildDay(day, order) {
       out.push({ type: "drive", t, min: lg.min, mi: lg.mi, f: lg.f, from: p, to: h });
       const reach = t + lg.min + st.buffer + (+st.cushion || 0);
       const fixed = h.fixedTime ? toMin(h.fixedTime) : null;
-      const arrive = fixed != null && !h.done ? Math.max(reach, fixed) : reach; // showing starts at the booked time
+      const slot = Math.ceil(reach / 30 - 1e-9) * 30; // showings start on the hour or half hour (10:24 -> 10:30)
+      const arrive = fixed != null && !h.done ? Math.max(slot, fixed) : slot; // a booked time wins
       const wait = arrive - reach, late = fixed != null && !h.done ? Math.max(0, reach - fixed) : 0;
       let leave = arrive + (h.showMin || st.showMin);
       if (h.done && live && h.doneMin != null) leave = h.doneMin;
@@ -1050,7 +1051,7 @@ function tlItem(x, day, next) {
   if (x.type === "drive") {
     if (x.min < 0.5) return "";
     return `<div class="tl-item drive-item"><div class="tl-time">${fmt(x.t)}</div><div class="tl-rail"><span class="node drive"></span></div>
-      <div class="tl-body" style="padding-block:2px"><div class="drive-row">${carIcon}<span>${dur(x.min)} drive · ${x.mi.toFixed(1)} mi${x.f >= 1.6 ? " · rush-hour traffic" : ""}${x.waitAfter > 2 ? ` · then ${dur(x.waitAfter)} free before the booked time` : ""}</span></div></div></div>`;
+      <div class="tl-body" style="padding-block:2px"><div class="drive-row">${carIcon}<span>${dur(x.min)} drive · ${x.mi.toFixed(1)} mi${x.f >= 1.6 ? " · rush-hour traffic" : ""}${x.waitAfter > 2 ? ` · ${dur(x.waitAfter)} to spare before the showing` : ""}</span></div></div></div>`;
   }
   if (x.type === "lunch") {
     return `<div class="tl-item"><div class="tl-time">${fmt(x.t)}<small>${fmt(x.end)}</small></div><div class="tl-rail"><span class="node lunch">L</span></div>
