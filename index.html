@@ -59,6 +59,15 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tab{border:0;background:none;padding:14px 12px;cursor:pointer;color:var(--muted);font-family:var(--f-head);font-size:15px;border-bottom:2px solid transparent;white-space:nowrap}
 .tab[aria-selected="true"]{color:var(--head);border-color:var(--gold)}
 .tabs{align-items:center}
+.presence{display:inline-flex;align-items:center;gap:0;margin-left:10px;vertical-align:middle}
+.presence[hidden]{display:none}
+.pav{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font:600 10.5px var(--f-body);letter-spacing:0;text-transform:none;border:2px solid var(--card);margin-left:-6px;position:relative;cursor:default}
+.pav:first-child{margin-left:0}
+.pav.me{cursor:pointer}
+.pnames{font:400 11px var(--f-body);letter-spacing:0;text-transform:none;color:var(--muted);margin-left:6px;white-space:nowrap}
+[data-tip]{position:relative}
+@media (hover:hover){[data-tip]:hover::after{content:attr(data-tip);position:absolute;z-index:70;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:max-content;max-width:240px;white-space:normal;text-align:left;background:var(--head);color:var(--card);font:400 12px/1.4 var(--f-body);letter-spacing:0;text-transform:none;padding:7px 9px;border-radius:7px;box-shadow:0 6px 20px rgba(0,0,0,.2);pointer-events:none}}
+@media (hover:hover){.presence [data-tip]:hover::after{bottom:auto;top:calc(100% + 8px);left:0;transform:none}}
 .sync{margin-left:8px;font:500 10.5px var(--f-body);letter-spacing:.04em;text-transform:none;color:var(--ok);white-space:nowrap}
 .sync[data-state="offline"]{color:var(--warn)}.sync[data-state="saving"],.sync[data-state="connecting"]{color:var(--muted)}
 .setupbtn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--gold);background:var(--card);color:var(--gold-ink);border-radius:99px;padding:6px 14px;font:500 14px var(--f-head);cursor:pointer;white-space:nowrap}
@@ -245,7 +254,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 <body>
 <header class="top">
   <div class="wrap">
-    <div class="brand"><div class="wordmark">Valenne Real Estate</div><div class="subline">Property Touring<span id="brandName"></span> <span id="syncState" class="sync" hidden></span></div></div>
+    <div class="brand"><div class="wordmark">Valenne Real Estate</div><div class="subline">Property Touring<span id="brandName"></span> <span id="syncState" class="sync" hidden></span><span id="presence" class="presence" hidden></span></div></div>
     <nav class="tabs" role="tablist" id="tabs"></nav>
   </div>
 </header>
@@ -390,6 +399,12 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 </main>
 
 <div id="toast" class="toast" role="status" hidden></div>
+<dialog class="sheet" id="nameDlg"><form class="sheet-in" id="nameForm" method="dialog">
+  <div class="sheet-head"><div><div class="eyebrow">Who's here</div><h3>Your name</h3></div><button class="close" type="button" data-closename aria-label="Close">×</button></div>
+  <p class="muted" style="margin:0">So others on this tour can see who's viewing. Saved on this device only.</p>
+  <label class="f">Name<input type="text" id="nameInput" maxlength="40" autocomplete="name" placeholder="e.g. Ani"></label>
+  <div class="actions"><button class="btn add" type="submit">Save</button></div>
+</form></dialog>
 <dialog class="sheet" id="shareDlg"><div class="sheet-in">
   <div class="sheet-head"><div><div class="eyebrow">Share this schedule</div><h3>Send your tour</h3></div><button class="close" data-closeshare aria-label="Close">×</button></div>
   <p style="margin:0" id="shareIntro">Anyone who opens this link sees this same schedule and can edit it. Changes show up on everyone's phone within a few seconds: homes, days, order, times, check-offs and notes.</p>
@@ -502,7 +517,54 @@ function applyRemote(d) {
   applying = true; save(); applying = false;
   recompute();
 }
+/* Presence: who else has this tour open (like Google Docs). Each open page checks in every 20 s. */
+const PRESENCE_COLORS = ["#2563b8", "#8a5a9e", "#2f6f73", "#b5652b", "#3d8b5a", "#b03a3a"];
+let HERE = {}, presT = null, presES = null;
+function myName() { try { return localStorage.getItem("tp-name") || ""; } catch (e) { return ""; } }
+function initials(n) { const p = (n || "").trim().split(/\s+/).filter(Boolean); return p.length ? (p[0][0] + (p[1] ? p[1][0] : "")).toUpperCase() : "?"; }
+function colorFor(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PRESENCE_COLORS[h % PRESENCE_COLORS.length]; }
+async function checkIn() {
+  if (!LIVE || document.hidden) return;
+  try { await fetch(`${DB}/tours/${LIVE}-here/${CLIENT}.json`, { method: "PUT", body: JSON.stringify({ name: myName() || "Guest", at: Date.now() }) }); } catch (e) {}
+}
+function leave() { if (LIVE) try { fetch(`${DB}/tours/${LIVE}-here/${CLIENT}.json`, { method: "DELETE", keepalive: true }); } catch (e) {} }
+function renderPresence() {
+  const el = document.getElementById("presence"); if (!el) return;
+  if (!LIVE) { el.hidden = true; return; }
+  const now = Date.now();
+  const others = Object.entries(HERE).filter(([id, p]) => id !== CLIENT && p && now - p.at < 60000);
+  el.hidden = false;
+  const me = myName() || "You";
+  el.innerHTML = `<span class="pav me" style="background:${colorFor(CLIENT)}" data-tip="${esc(myName() ? "You (" + myName() + "). Tap to change your name." : "You. Tap to add your name so others see who's here.")}" data-setname>${esc(initials(myName() || "You"))}</span>` +
+    others.map(([id, p]) => `<span class="pav" style="background:${colorFor(id)}" data-tip="${esc((p.name || "Guest") + " is viewing this tour")}">${esc(initials(p.name || "Guest"))}</span>`).join("") +
+    (others.length ? `<span class="pnames">${others.length === 1 ? esc(others[0][1].name || "Someone") + " is here" : others.length + " others here"}</span>` : "");
+}
+function startPresence() {
+  if (!LIVE) return;
+  try { if (!myName() && !localStorage.getItem("tp-name-asked")) { localStorage.setItem("tp-name-asked", "1"); setTimeout(askName, 1200); } } catch (e) {}
+  checkIn(); clearInterval(presT); presT = setInterval(() => { checkIn(); renderPresence(); }, 20000);
+  if (presES) presES.close();
+  presES = new EventSource(`${DB}/tours/${LIVE}-here.json`);
+  presES.addEventListener("put", (e) => {
+    try {
+      const m = JSON.parse(e.data);
+      if (m.path === "/") HERE = m.data || {};
+      else { const id = m.path.replace(/^\//, "").split("/")[0]; if (m.data == null) delete HERE[id]; else HERE[id] = m.data; }
+      renderPresence();
+    } catch (err) {}
+  });
+  presES.addEventListener("patch", (e) => { try { const m = JSON.parse(e.data); Object.assign(HERE, m.data || {}); renderPresence(); } catch (err) {} });
+  renderPresence();
+}
+addEventListener("pagehide", leave);
+document.addEventListener("visibilitychange", () => { if (document.hidden) leave(); else checkIn(); });
+function askName() {
+  const d = document.getElementById("nameDlg"); if (!d) return;
+  document.getElementById("nameInput").value = myName();
+  d.showModal(); setTimeout(() => document.getElementById("nameInput").focus(), 50);
+}
 function listenLive() {
+  startPresence();
   if (es) es.close();
   setSync("connecting");
   es = new EventSource(`${DB}/tours/${LIVE}.json`);
@@ -1020,6 +1082,8 @@ function confirmControls(h) {
     ${h.fixedTime ? `<button class="btn ghost rm" data-clearfixed="${h.id}">Clear time</button>` : ""}`;
 }
 let UNDO_FN = null;
+const TIP_BACKLOG = "Takes this home off the schedule and saves it in the Backlog tab for later. Nothing is deleted: you can add it back to a day anytime.";
+const TIP_DELETE = "Deletes this home from the tour for everyone, including its notes. This can't be undone.";
 function showToast(msg, undo = true) {
   const el = document.getElementById("toast");
   if (typeof undo === "function") UNDO_FN = undo; else if (undo) UNDO_FN = null;
@@ -1102,7 +1166,7 @@ function tlItem(x, day, next) {
         <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
         <a class="btn small" href="${dirUrl(h)}" target="_blank" rel="noopener">Directions</a>
       </div>
-      <div class="cardacts pairrow" data-stop>${moveBtn(h, day, "btn small")}<button class="btn small danger" data-backlog="${h.id}" aria-label="Move ${esc(h.address)} to the backlog">Move to backlog</button></div>
+      <div class="cardacts pairrow" data-stop>${moveBtn(h, day, "btn small")}<button class="btn small danger" data-backlog="${h.id}" aria-label="Move ${esc(h.address)} to the backlog" data-tip="${TIP_BACKLOG}">Move to backlog</button></div>
       ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
       ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
           <button class="btn small gold" data-notedone="${h.id}" style="justify-self:start">Save note</button></div>`
@@ -1233,7 +1297,7 @@ function openSheet(id) {
       <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
       <a class="btn" target="_blank" rel="noopener" href="${dirUrl(h)}">Directions</a>
       <button class="btn" data-note-sheet="${h.id}">Add note</button>
-      <span class="pairrow">${moveBtn(h, day, "btn")}${h.backlog ? `<button class="btn" data-restore="${h.id}">Back to schedule</button><button class="btn danger" data-remove="${h.id}">Delete permanently</button>` : `<button class="btn danger" data-backlog="${h.id}">Move to backlog</button>`}</span>
+      <span class="pairrow">${moveBtn(h, day, "btn")}${h.backlog ? `<button class="btn" data-restore="${h.id}">Back to schedule</button><button class="btn danger" data-remove="${h.id}" data-tip="${TIP_DELETE}">Delete permanently</button>` : `<button class="btn danger" data-backlog="${h.id}" data-tip="${TIP_BACKLOG}">Move to backlog</button>`}</span>
     </div>
     <div class="confrow">${confirmControls(h)}</div>
     ${!filled ? `<div class="note-sample">${h.pending ? "Getting the photos, agent, summary, concerns, questions and assumable notes. They appear here automatically, usually within 15 minutes." : "Details aren't filled in for this home. Add it from its Redfin link and they fill in automatically."}</div>` : ""}
@@ -1279,7 +1343,7 @@ function renderBacklog() {
       <div class="cardacts" data-stop>
         ${days === 2 ? `<button class="btn small add" data-restore="${h.id}" data-day="1">Add to Day 1</button><button class="btn small add" data-restore="${h.id}" data-day="2">Add to Day 2</button>` : `<button class="btn small add" data-restore="${h.id}">Back to schedule</button><button class="btn small" data-restore="${h.id}" data-day="2">Add to Day 2</button>`}
         <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
-        <button class="btn small danger" data-remove="${h.id}">Delete permanently</button>
+        <button class="btn small danger" data-remove="${h.id}" data-tip="${TIP_DELETE}">Delete permanently</button>
       </div>
     </div>`;
   }).join("");
@@ -1301,6 +1365,16 @@ function render() {
 
 /* ---------- events ---------- */
 document.addEventListener("click", e => { if (e.target.closest("[data-closeshare]") || e.target === $("#shareDlg")) $("#shareDlg").close(); });
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-setname]")) { askName(); return; }
+  if (e.target.closest("[data-closename]") || e.target === document.getElementById("nameDlg")) document.getElementById("nameDlg").close();
+});
+document.getElementById("nameForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = document.getElementById("nameInput").value.trim().slice(0, 40);
+  try { localStorage.setItem("tp-name", v); } catch (err) {}
+  document.getElementById("nameDlg").close(); checkIn(); renderPresence();
+});
 document.addEventListener("click", async e => {
   const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
