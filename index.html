@@ -199,6 +199,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .sheet-in{display:grid;gap:16px;padding:20px}
 .sheet-head{display:flex;gap:12px;justify-content:space-between;align-items:start}
 .sheet-head h3{font-size:22px}
+.sheet-head .topbtns{align-items:center}
 .close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
 .sec h4{margin:0 0 6px;font-family:var(--f-head);font-weight:500;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-ink)}
 .sec ul{margin:0;padding-left:18px;display:grid;gap:4px}
@@ -217,6 +218,24 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .confrow{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13px;background:var(--bg);border-radius:8px;padding:6px 10px;cursor:default}
 .confrow .chk{font-size:13px}
 .cardacts{display:flex;gap:6px;flex-wrap:wrap}
+.cardacts.oneline{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.cardacts.oneline::-webkit-scrollbar{display:none}
+.cardacts.oneline .btn{flex:none}
+.btn.visit{background:color-mix(in srgb,var(--gold) 22%,var(--card));border-color:color-mix(in srgb,var(--gold) 75%,var(--line));color:var(--head);font-weight:500}
+.btn.visit:hover{background:color-mix(in srgb,var(--gold) 35%,var(--card))}
+.topbtns{order:3;flex:none;display:flex;gap:6px;align-items:start}
+.btn.dir{flex:none;background:var(--ok);border-color:var(--ok);color:#fff;font-weight:500;align-self:start}
+.btn.dir:hover{filter:brightness(1.08);border-color:var(--ok)}
+.cardfoot{display:flex;justify-content:flex-end;margin-top:2px}
+.btn.dir{gap:5px}
+@media (max-width:520px){
+  .btn.dir .dirtxt{display:none}
+  .topbtns{flex-direction:column;gap:4px}
+  .stop .thumb{width:68px;height:54px}
+  .btn.dir{padding:6px 8px}
+  .cardacts.oneline{flex-wrap:wrap;overflow:visible}
+  .cardacts.oneline .btn{padding:6px 10px;font-size:12.5px}
+}
 .agentname{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--gold-ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--gold-ink) 40%,transparent)}
 .agentname span{font-size:11px;text-decoration:none;display:inline-block}
 .agentinfo{display:block;margin-top:4px;line-height:1.5}
@@ -232,7 +251,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:12px;align-items:center;background:var(--head);color:var(--card);padding:10px 12px 10px 16px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px);font-size:13.5px}
 .toast .btn{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
 .stop-top{display:flex;gap:12px;align-items:start}
-.collapser{flex:none;order:3;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:6px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;font-size:13px;line-height:1;padding:0}
+.collapser{flex:none;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:6px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;font-size:13px;line-height:1;padding:0}
 .collapser:hover{border-color:var(--gold);color:var(--head)}
 .stop.collapsed{gap:0;padding-block:8px}
 .stop.collapsed > :not(.stop-top){display:none}
@@ -1103,7 +1122,7 @@ function moveBtn(h, day, cls) {
   return `<button class="${cls}" data-move="${h.id}" data-to="${to}">${S.settings.days === 1 ? "Add to Day 2" : `Move to Day ${to}`}</button>`;
 }
 function visitBtn(h, cls) {
-  return h.done ? `<button class="${cls}" data-undone="${h.id}">Undo visited</button>` : `<button class="${cls} gold" data-done="${h.id}">Mark as visited</button>`;
+  return h.done ? `<button class="${cls}" data-undone="${h.id}">Undo visited</button>` : `<button class="${cls}${/visit/.test(cls) ? "" : " gold"}" data-done="${h.id}">Mark as visited</button>`;
 }
 const dirUrl = h => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(h))}`;
 function confirmControls(h) {
@@ -1174,7 +1193,8 @@ function tlItem(x, day, next) {
   const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : "", lotTxt ? `${esc(lotTxt)} lot` : ""].filter(Boolean).join("<span class='muted'>·</span>")
     + (h.yard ? `</div><div class="facts yardline"><span>Yard: ${esc(h.yard)}</span>` : "");
   const phone = telDigits(h.phone);
-  const rmBtn = `${NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn ghost rm" data-note="${h.id}">Add note</button>`}`;
+  const rmBtn = "";
+  const noteBtn = NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn small" data-note="${h.id}">Add note</button>`;
   const who = h.contact && h.contact !== h.agent ? h.contact : h.agent;
   const agentOpen = AGENT_OPEN.has(h.id);
   const agentInfo = [h.contact && h.contact !== h.agent ? "Listing agent: " + h.agent : "", h.brokerage ? "Brokerage: " + h.brokerage : "",
@@ -1188,24 +1208,25 @@ function tlItem(x, day, next) {
   return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
     <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
     <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""} ${isCollapsed(h) ? "collapsed" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
-      <div class="stop-top"><button class="collapser" type="button" data-collapse="${h.id}" aria-expanded="${!isCollapsed(h)}" aria-label="${isCollapsed(h) ? "Expand" : "Collapse"} ${esc(h.address)}" data-tip="${isCollapsed(h) ? "Show details" : "Collapse this card"}">${isCollapsed(h) ? "▸" : "▾"}</button>${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+      <div class="stop-top"><div class="topbtns"><a class="btn small dir" href="${dirUrl(h)}" target="_blank" rel="noopener" data-stop aria-label="Directions to ${esc(h.address)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="dirtxt">Directions</span></a><button class="collapser" type="button" data-collapse="${h.id}" aria-expanded="${!isCollapsed(h)}" aria-label="${isCollapsed(h) ? "Expand" : "Collapse"} ${esc(h.address)}" data-tip="${isCollapsed(h) ? "Show details" : "Collapse this card"}">${isCollapsed(h) ? "▸" : "▾"}</button></div>${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
       <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
         <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
       ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
       <div class="confrow" data-stop>${confirmControls(h)}</div>
-      <div class="cardacts" data-stop>
-        ${visitBtn(h, "btn small")}
-        <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
-        <a class="btn small" href="${dirUrl(h)}" target="_blank" rel="noopener">Directions</a>
+      <div class="cardacts oneline" data-stop>
+        ${visitBtn(h, "btn small visit")}
+        <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
+        ${moveBtn(h, day, "btn small")}
+        ${noteBtn}
       </div>
-      <div class="cardacts pairrow" data-stop>${moveBtn(h, day, "btn small")}<button class="btn small danger" data-backlog="${h.id}" aria-label="Move ${esc(h.address)} to the backlog" data-tip="${TIP_BACKLOG}">Move to backlog</button></div>
       ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
       ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
           <button class="btn small gold" data-notedone="${h.id}" style="justify-self:start">Save note</button></div>`
         : h.notes ? `<div class="cardnote" data-note="${h.id}" title="Tap to edit"><b>Notes</b>${esc(h.notes)}</div>` : ""}
       ${agentLine}
+      <div class="cardfoot" data-stop><button class="btn small danger" data-backlog="${h.id}" aria-label="Move ${esc(h.address)} to the backlog" data-tip="${TIP_BACKLOG}">Move to backlog</button></div>
     </div></div></div>`;
 }
 
@@ -1251,6 +1272,21 @@ async function routeLine(points) {
 }
 let mapToken = 0;
 let MARKERS = {}, SEL_PIN = null;
+function paintPins(id) {
+  Object.entries(MARKERS).forEach(([k, m]) => {
+    const el = m.getElement && m.getElement(); const pin = el && el.querySelector(".pin");
+    if (pin) pin.classList.toggle("hl", k === id);
+    m.setZIndexOffset(k === id ? 1000 : 0);
+    if (k === id) m.openTooltip(); else m.closeTooltip();
+  });
+}
+// Hovering a card (laptop) lights up its pin; leaving puts the selected pin back
+let HOVER_PIN = null;
+document.addEventListener("mouseover", e => {
+  const c = e.target.closest && e.target.closest(".stop[data-open]"); const id = c ? c.dataset.open : null;
+  if (id === HOVER_PIN) return; HOVER_PIN = id;
+  if (id && MARKERS[id]) paintPins(id); else if (!id) { paintPins(SEL_PIN); if (MARKERS[SEL_PIN]) MARKERS[SEL_PIN].closeTooltip(); }
+});
 function highlightPin(id, pan) {
   SEL_PIN = id;
   Object.entries(MARKERS).forEach(([k, m]) => {
@@ -1315,7 +1351,7 @@ function asmPill(h) {
 }
 function asmBlock(h) {
   const a = h.assumable;
-  if (!a) return `<div class="sec"><h4>Assumable loan notes</h4><p class="muted small" style="margin:0">Not on the assumable-loan list. No notes yet.</p></div>`;
+  if (!a) return "";
   const [cls, , word] = ASM[a.status] || ASM.possible;
   return `<div class="sec"><h4>Assumable loan notes</h4><div class="asm ${cls}">
     <div><b style="font-family:var(--f-head);font-weight:500;font-size:16px">${esc(word)}</b>${a.status !== "no" ? ` <span class="muted">· ${esc(a.label)}</span>` : ""}</div>
@@ -1333,26 +1369,31 @@ function openSheet(id) {
   $("#sheetIn").innerHTML = `
     <div class="sheet-head"><div style="min-width:0"><div class="eyebrow" style="color:${dayColor(day)}">Day ${day}${it ? ` · ${fmt(it.arrive)} – ${fmt(it.leave)}` : ""}</div>
       <h3>${esc(h.address)}</h3><div class="muted">${esc(fullAddr(h).replace(h.address + ", ", ""))}</div></div>
-      <button class="close" data-close aria-label="Close">×</button></div>
+      <div class="topbtns"><a class="btn small dir" href="${dirUrl(h)}" target="_blank" rel="noopener" aria-label="Directions to ${esc(h.address)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="dirtxt">Directions</span></a><button class="close" data-close aria-label="Close">×</button></div></div>
     ${h.photo ? `<img class="hero" src="${esc(h.photo)}" alt="${esc(h.address)}" loading="lazy" onerror="this.remove()">` : ""}
-    <div class="facts" style="font-size:14px">${[h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : ""].filter(Boolean).join(" · ")}</div>
-    <div class="actions">
-      ${visitBtn(h, "btn")}
-      <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
-      <a class="btn" target="_blank" rel="noopener" href="${dirUrl(h)}">Directions</a>
-      <button class="btn" data-note-sheet="${h.id}">Add note</button>
-      <span class="pairrow">${moveBtn(h, day, "btn")}${h.backlog ? `<button class="btn" data-restore="${h.id}">Back to schedule</button><button class="btn danger" data-remove="${h.id}" data-tip="${TIP_DELETE}">Delete permanently</button>` : `<button class="btn danger" data-backlog="${h.id}" data-tip="${TIP_BACKLOG}">Move to backlog</button>`}</span>
+    <div class="facts" style="font-size:14px">${[h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : "", h.lot ? esc(String(h.lot).replace(/\s*\(.*\)$/, "")) + " lot" : ""].filter(Boolean).join(" · ")}</div>
+    ${h.done || h.confirmed || h.fixedTime ? `<div class="facts">${h.done ? `<span class="pill ok">Done</span>` : ""}${h.confirmed ? `<span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? `<span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}</div>` : ""}
+    ${h.school ? `<div class="facts small"><span>Elementary: <b>${esc(h.school)}</b></span></div>` : ""}
+    ${h.yard ? `<div class="facts yardline"><span>Yard: ${esc(h.yard)}</span></div>` : ""}
+    ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
+    ${it && it.late > 0 ? `<div class="lateline">You'd arrive about ${dur(it.late)} after the booked ${fmt(it.fixed)} time. Change the order or the time.</div>` : ""}
+    <div class="cardacts oneline">
+      ${visitBtn(h, "btn small visit")}
+      <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
+      ${h.backlog ? `<button class="btn small add" data-restore="${h.id}">Back to schedule</button>` : moveBtn(h, day, "btn small")}
+      <button class="btn small" data-note-sheet="${h.id}">Add note</button>
     </div>
     <div class="confrow">${confirmControls(h)}</div>
     ${!filled ? `<div class="note-sample">${h.pending ? "Getting the photos, agent, summary, concerns, questions and assumable notes. They appear here automatically, usually within 15 minutes." : "Details aren't filled in for this home. Add it from its Redfin link and they fill in automatically."}</div>` : ""}
     ${h.summary ? `<div class="sec"><h4>Summary</h4><p style="margin:0">${esc(h.summary)}</p></div>` : ""}
     ${asmBlock(h)}
-    ${(() => { const kv = [["Year built", h.yearBuilt], ["Lot", h.lot], ["Yard", h.yard], ["Parking", h.parking], ["HOA", h.hoa], ["Days on market", h.dom], ["Open house", h.openHouse], ["MLS #", h.mls], ["Neighborhood", h.area]].filter(x => x[1] !== undefined && x[1] !== null && x[1] !== "");
+    ${(() => { const kv = [["Year built", h.yearBuilt], ["Lot", h.lot], ["Elementary school", h.school], ["Yard", h.yard], ["Parking", h.parking], ["HOA", h.hoa], ["Days on market", h.dom], ["Open house", h.openHouse], ["MLS #", h.mls], ["Neighborhood", h.area]].filter(x => x[1] !== undefined && x[1] !== null && x[1] !== "");
       return kv.length ? `<div class="sec"><h4>Property details</h4><dl class="kv">${kv.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl></div>` : ""; })()}
     <div class="sec"><h4>Key things</h4>${list(h.highlights)}</div>
     <div class="sec concerns"><h4>Concerns</h4>${list(h.concerns)}</div>
     <div class="sec"><h4>Questions to ask</h4>${h.questions && h.questions.length ? `<ul class="qlist">${h.questions.map((q, i) => `<li><label><input type="checkbox" data-ask="${h.id}" data-q="${i}" ${(h.asked || []).includes(i) ? "checked" : ""}><span>${esc(q)}</span></label></li>`).join("")}</ul>` : `<p class="muted small" style="margin:0">Not filled in yet.</p>`}</div>
     <div class="sec"><h4>Listing agent</h4>
+      ${(h.agent || h.contact) ? `<p style="margin:0 0 8px">Contact agent <b>${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}</b>${h.brokerage ? ` <span class="muted">· ${esc(h.brokerage)}</span>` : ""}</p>` : ""}
       <div class="grid2">
         <label class="f">Agent name<input type="text" data-field="agent" data-id="${h.id}" value="${esc(h.agent)}"></label>
         <label class="f">Phone for showings<input type="text" data-field="phone" data-id="${h.id}" value="${esc(prettyPhone(h.phone))}" inputmode="tel"></label>
@@ -1365,7 +1406,8 @@ function openSheet(id) {
       <label class="f">Minutes at this home<select data-field="showMin" data-id="${h.id}">${[15, 20, 30, 45, 60, 90].map(v => `<option ${((h.showMin || S.settings.showMin) == v) ? "selected" : ""}>${v}</option>`).join("")}</select></label>
       ${S.settings.days === 2 ? `<label class="f">Day<select data-field="pin" data-id="${h.id}" ${h.done ? "disabled" : ""}><option value="0" ${!h.pin ? "selected" : ""}>Auto</option><option value="1" ${h.pin === 1 ? "selected" : ""}>Day 1</option><option value="2" ${h.pin === 2 ? "selected" : ""}>Day 2</option></select></label>` : ""}
     </div>
-    <label class="f">Our notes from the visit<textarea rows="3" data-field="notes" data-id="${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes)}</textarea></label>`;
+    <label class="f">Our notes from the visit<textarea rows="3" data-field="notes" data-id="${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes)}</textarea></label>
+    <div class="cardfoot">${h.backlog ? `<button class="btn small danger" data-remove="${h.id}" data-tip="${TIP_DELETE}">Delete permanently</button>` : `<button class="btn small danger" data-backlog="${h.id}" data-tip="${TIP_BACKLOG}">Move to backlog</button>`}</div>`;
   const dlg = $("#sheet"); if (!dlg.open) dlg.showModal();
 }
 
