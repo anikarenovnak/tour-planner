@@ -26,18 +26,18 @@
 :root{
   --bg:#f6f5f2; --card:#ffffff; --ink:#2f2f2f; --head:#4a4a4a; --muted:#7a766e; --line:#e4e0d8;
   --gold:#d1bf99; --gold-ink:#8f7850; --on-gold:#2f2a22; --gold-soft:#f1ead9;
-  --d1:#2f6f73; --d2:#8a5a9e; --ok:#3d8b5a; --warn:#b5652b; --danger:#b03a3a;
+  --d1:#2f6f73; --d2:#8a5a9e; --ok:#3d8b5a; --warn:#b5652b; --danger:#b03a3a; --add:#2563b8;
   --f-head:"Jost",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#18181a; --card:#222225; --ink:#ecebe8; --head:#d9d7d2; --muted:#a29e96; --line:#35353a;
   --gold:#cfb98f; --gold-ink:#d6c39c; --on-gold:#2f2a22; --gold-soft:#3a3428;
-  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; color-scheme:dark}}
+  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; --add:#3b7ddd; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#18181a; --card:#222225; --ink:#ecebe8; --head:#d9d7d2; --muted:#a29e96; --line:#35353a;
   --gold:#cfb98f; --gold-ink:#d6c39c; --on-gold:#2f2a22; --gold-soft:#3a3428;
-  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; color-scheme:dark}
+  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; --add:#3b7ddd; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -80,6 +80,10 @@ main{padding-block:20px 80px}
 .btn{display:inline-flex;align-items:center;gap:6px;justify-content:center;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 14px;cursor:pointer;text-decoration:none;color:var(--ink);font-size:13.5px;white-space:nowrap}
 .btn:hover{border-color:var(--gold)}
 .btn.gold{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:500}
+.btn.add{background:var(--add);border-color:var(--add);color:#fff;font-weight:500}
+.btn.add:hover{filter:brightness(1.08);border-color:var(--add)}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line));background:var(--card)}
+.btn.danger:hover{background:color-mix(in srgb,var(--danger) 10%,var(--card));border-color:var(--danger)}
 .btn.ghost{border-color:transparent;background:none;color:var(--gold-ink);padding-inline:6px}
 .btn.small{padding:5px 10px;font-size:12.5px}
 .btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
@@ -203,6 +207,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .confrow{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13px;background:var(--bg);border-radius:8px;padding:6px 10px;cursor:default}
 .confrow .chk{font-size:13px}
 .cardacts{display:flex;gap:6px;flex-wrap:wrap}
+.pairrow{display:inline-flex;gap:6px;flex-wrap:nowrap}
 .cardacts .btn{padding:5px 10px}
 .timeset{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
 .timeset input{width:auto;padding:4px 6px;font-size:13px}
@@ -259,7 +264,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
             <textarea id="links" rows="4" placeholder="https://www.redfin.com/CA/San-Diego/1234-Main-St-92126/home/12345678"></textarea>
           </label>
           <div class="row" style="align-items:center">
-            <button class="btn gold" id="addLinks" style="flex:0 0 auto">Add homes</button>
+            <button class="btn add" id="addLinks" style="flex:0 0 auto">Add homes</button>
             <div class="status muted" id="addStatus" style="flex:1 1 200px"></div>
           </div>
           <div>
@@ -346,7 +351,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
         <div class="toolbar" id="dayToolbar"></div>
         <ol class="olist" id="dayOrder" hidden></ol>
         <div class="addbox" id="dayAdd">
-          <button class="btn gold small" id="dayAddToggle" style="justify-self:start">+ Add a home to this day</button>
+          <button class="btn add small" id="dayAddToggle" style="justify-self:start">+ Add a home to this day</button>
           <div id="dayAddForm" hidden class="stack" style="gap:8px">
             <div class="row">
               <input type="text" id="dayAddInput" placeholder="Paste Redfin or Zillow links, or type an address">
@@ -987,7 +992,7 @@ function renderDay(day) {
   renderOrderList($("#dayOrder"), day);
   plan.items.forEach((x, i) => { if (x.type === "drive") { const n = plan.items[i + 1]; x.waitAfter = n && n.type === "stop" ? n.wait || 0 : 0; } });
   $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("") +
-    `<div style="padding:14px 0 0 82px"><button class="btn gold small" data-addmore>+ Add another home</button></div>`;
+    `<div style="padding:14px 0 0 82px"><button class="btn add small" data-addmore>+ Add another home</button></div>`;
 }
 
 let EDIT = null, PLACEMSG = "", NOTE_EDIT = null, LAST_REMOVED = null, toastT = null;
@@ -1065,7 +1070,7 @@ function tlItem(x, day, next) {
   const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? `${h.beds} bd` : "", h.baths ? `${h.baths} ba` : "", h.sqft ? `${Number(h.sqft).toLocaleString()} sq ft` : "", lotTxt ? `${esc(lotTxt)} lot` : ""].filter(Boolean).join("<span class='muted'>·</span>")
     + (h.yard ? `</div><div class="facts yardline"><span>Yard: ${esc(h.yard)}</span>` : "");
   const phone = telDigits(h.phone);
-  const rmBtn = `${NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn ghost rm" data-note="${h.id}">Add note</button>`}<button class="btn ghost rm" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button>`;
+  const rmBtn = `${NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn ghost rm" data-note="${h.id}">Add note</button>`}`;
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
       <div class="who">${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}${phone ? ` · ${prettyPhone(h.phone)}` : ""}
         <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
@@ -1084,10 +1089,10 @@ function tlItem(x, day, next) {
       <div class="confrow" data-stop>${confirmControls(h)}</div>
       <div class="cardacts" data-stop>
         ${visitBtn(h, "btn small")}
-        ${moveBtn(h, day, "btn small")}
         <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
         <a class="btn small" href="${dirUrl(h)}" target="_blank" rel="noopener">Directions</a>
       </div>
+      <div class="cardacts pairrow" data-stop>${moveBtn(h, day, "btn small")}<button class="btn small danger" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button></div>
       ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
       ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
           <button class="btn small gold" data-notedone="${h.id}" style="justify-self:start">Save note</button></div>`
@@ -1217,9 +1222,8 @@ function openSheet(id) {
       ${visitBtn(h, "btn")}
       <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
       <a class="btn" target="_blank" rel="noopener" href="${dirUrl(h)}">Directions</a>
-      ${moveBtn(h, day, "btn")}
       <button class="btn" data-note-sheet="${h.id}">Add note</button>
-      <button class="btn rm" data-remove="${h.id}">Remove from tour</button>
+      <span class="pairrow">${moveBtn(h, day, "btn")}<button class="btn danger" data-remove="${h.id}">Remove from tour</button></span>
     </div>
     <div class="confrow">${confirmControls(h)}</div>
     ${!filled ? `<div class="note-sample">${h.pending ? "Getting the photos, agent, summary, concerns, questions and assumable notes. They appear here automatically, usually within 15 minutes." : "Details aren't filled in for this home. Add it from its Redfin link and they fill in automatically."}</div>` : ""}
