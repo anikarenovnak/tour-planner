@@ -278,6 +278,15 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .empty{padding:30px;text-align:center;color:var(--muted)}
 .note-sample{font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px}
 @media (prefers-reduced-motion:no-preference){.stop,.btn{transition:border-color .15s, box-shadow .15s}}
+.tgroup{display:grid;gap:12px;margin-bottom:26px}
+.tghead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}
+.tghead h3{margin:2px 0 0;font-size:18px}
+.tourbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.tourbar.on{border-color:color-mix(in srgb,var(--ok) 55%,var(--line));background:color-mix(in srgb,var(--ok) 8%,var(--card))}
+.btn.go{background:var(--ok);color:#fff;border-color:var(--ok)}
+.btn.stopt{background:#b03a3a;color:#fff;border-color:#b03a3a}
+.livedot{width:9px;height:9px;border-radius:50%;background:var(--ok);display:inline-block;animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
 </style>
 </head>
 <body>
@@ -411,6 +420,12 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
     <div id="backlogList" class="stack"></div>
   </section>
 
+  <section class="view" id="view-toured" hidden>
+    <div class="dayhead"><div><div class="eyebrow">Your tour log</div><h2>Toured homes</h2></div></div>
+    <p class="muted" style="margin:0 0 14px">Every home you've seen, grouped by tour day, with the time you visited it. Tap <b>End touring</b> on a day to move its visited homes here. Put one back on the schedule any time.</p>
+    <div id="touredList" class="stack"></div>
+  </section>
+
   <section class="view" id="view-map" hidden>
     <div class="mapview">
       <div id="mapHome"><div class="mapbox" id="map"></div></div>
@@ -489,6 +504,7 @@ const DB = "https://valenne-tour-planner-default-rtdb.firebaseio.com"; // Fireba
 let LIVE = DB && TOUR ? TOUR : "";
 const CLIENT = Math.random().toString(36).slice(2);
 let lastSent = "", pushT = null, es = null, applying = false;
+const onSched = h => !h.backlog && !h.toured;
 const sharedPart = st => { const o = JSON.parse(JSON.stringify(st)); delete o.tab; delete o.mapDay; delete o.sharedIn; return o; };
 function setSync(state) {
   const el = document.getElementById("syncState"); if (!el) return;
@@ -705,7 +721,7 @@ const endPoint = () => S.settings.sameEnd ? S.settings.start : (S.settings.end |
 const stopMin = h => (h.showMin || S.settings.showMin) + S.settings.buffer;
 
 function assignDays() {
-  const st = S.settings, homes = S.homes.filter(h => h.lat != null && !h.backlog);
+  const st = S.settings, homes = S.homes.filter(h => h.lat != null && onSched(h));
   const res = new Map();
   if (st.days === 1) { homes.forEach(h => res.set(h.id, 1)); return res; }
   const anyDone = homes.some(h => h.done) || S.lockDays; // keep homes on their day once the tour is underway or edited on a day tab
@@ -765,7 +781,7 @@ function orderWithBookings(day, from, B, rest, doneCount) {
 }
 function dayOrder(day, assignment) {
   const A = S.settings.start, B = endPoint();
-  const hs = S.homes.filter(h => h.lat != null && !h.backlog && assignment.get(h.id) === day);
+  const hs = S.homes.filter(h => h.lat != null && onSched(h) && assignment.get(h.id) === day);
   const done = hs.filter(h => h.done).sort((a, b) => (a.doneSeq || 0) - (b.doneSeq || 0));
   const rest = hs.filter(h => !h.done);
   const from = done.length ? done[done.length - 1] : A;
@@ -829,7 +845,7 @@ let PLAN = { 1: null, 2: null };
 async function recompute() {
   const st = S.settings;
   if (!st.start) { PLAN = { 1: null, 2: null }; render(); return; }
-  const pts = [st.start, endPoint(), ...S.homes.filter(h => h.lat != null && !h.backlog)];
+  const pts = [st.start, endPoint(), ...S.homes.filter(h => h.lat != null && onSched(h))];
   await loadMatrix(pts);
   const assignment = assignDays();
   assignment.forEach((d, id) => S.assign[id] = d);
@@ -1030,6 +1046,8 @@ function renderTabs() {
   tabs.push(["map", "Map"]);
   const nb = S.homes.filter(h => h.backlog).length;
   tabs.push(["backlog", "Backlog" + (nb ? ` (${nb})` : "")]);
+  const nt = S.homes.filter(h => h.toured).length;
+  tabs.push(["toured", "Toured" + (nt ? ` (${nt})` : "")]);
   if (S.tab === "day2" && S.settings.days === 1) S.tab = "day1";
   const gear = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
   $("#tabs").innerHTML = `<button class="setupbtn" data-tab="setup" aria-selected="${S.tab === "setup"}">${gear}Setup</button>
@@ -1063,7 +1081,7 @@ function renderSetup() {
     const daySel = st.days === 2 ? `<select data-pin="${h.id}" aria-label="Day for ${esc(h.address)}" ${h.done ? "disabled" : ""}>
         <option value="0" ${!h.pin ? "selected" : ""}>Auto${!h.pin && d ? ` (Day ${d})` : ""}</option>
         <option value="1" ${h.pin === 1 ? "selected" : ""}>Day 1</option><option value="2" ${h.pin === 2 ? "selected" : ""}>Day 2</option></select>` : "<span></span>";
-    const flag = h.lat == null ? `<span class="pill warn">Not on map</span>` : h.done ? `<span class="pill ok">Done</span>` : "";
+    const flag = h.toured ? `<span class="pill ok">Toured ${esc(new Date(h.toured.date + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }))}</span>` : h.backlog ? `<span class="pill">Backlog</span>` : h.lat == null ? `<span class="pill warn">Not on map</span>` : h.done ? `<span class="pill ok">Done</span>` : "";
     return `<div class="hrow">
       <span class="num" style="width:10px;height:10px;border-radius:50%;background:${d ? dayColor(d) : "var(--line)"}"></span>
       <div style="min-width:0"><div class="addr">${esc(h.address)} ${flag}</div><div class="muted small">${esc(h.city)}${h.price ? " · " + money(h.price) : ""}</div></div>
@@ -1080,6 +1098,13 @@ function dayStats(plan) {
   return { stops: stops.length, start, end, drv, mi, done: stops.filter(x => x.h.done).length };
 }
 
+function tourBar(day, s) {
+  const on = S.touring && S.touring["d" + day];
+  const nv = s.done;
+  if (on) return `<div class="tourbar on"><span class="livedot" aria-hidden="true"></span><div style="flex:1;min-width:0"><b>Touring now</b> <span class="muted small">· started ${fmtClock(on)} · ${nv} visited</span></div><button class="btn small stopt" data-tourend="${day}">End touring</button></div>`;
+  return `<div class="tourbar"><div style="flex:1;min-width:0" class="small muted">${nv ? `${nv} home${nv === 1 ? "" : "s"} marked visited. End touring to move ${nv === 1 ? "it" : "them"} to Toured.` : "Heading out? Start touring to log this day's visits."}</div>
+    <button class="btn small go" data-tourstart="${day}">Start touring</button>${nv ? `<button class="btn small stopt" data-tourend="${day}">End touring</button>` : ""}</div>`;
+}
 function renderDay(day) {
   const plan = PLAN[day], st = S.settings;
   $("#view-day").style.setProperty("--dc", dayColor(day));
@@ -1102,6 +1127,7 @@ function renderDay(day) {
       <div class="small muted">Leave by ${fmt(drive.t)} · ${dur(drive.min)} drive${live ? " · times update live as you check homes off" : ""}</div></div>
       <a class="btn small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fullAddr(next.h))}">Directions</a></div>`;
   } else $("#dayBanner").innerHTML = `<div class="banner"><b>All homes done.</b> <span class="muted">Head back: ${esc(shortPlace(endPoint()))}</span></div>`;
+  $("#dayBanner").insertAdjacentHTML("afterbegin", tourBar(day, s));
   if (S.sharedIn) $("#dayBanner").insertAdjacentHTML("afterbegin", `<div class="banner" style="background:var(--bg);border:1px solid var(--line)"><div style="flex:1;min-width:0" class="small">This schedule was shared with you. Your edits stay on this phone; tap <b>Share</b> at the top to send your version back.</div><button class="btn ghost small" data-dismissshared>OK</button></div>`);
   const manual = !!S.manual[day];
   $("#dayToolbar").innerHTML = `
@@ -1391,9 +1417,9 @@ function openSheet(id) {
     ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
     ${it && it.late > 0 ? `<div class="lateline">You'd arrive about ${dur(it.late)} after the booked ${fmt(it.fixed)} time. Change the order or the time.</div>` : ""}
     <div class="cardacts oneline">
-      ${visitBtn(h, "btn small visit")}
+      ${h.toured ? "" : visitBtn(h, "btn small visit")}
       <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
-      ${h.backlog ? `<button class="btn small add" data-restore="${h.id}">Back to schedule</button>` : moveBtn(h, day, "btn small")}
+      ${h.backlog || h.toured ? `<button class="btn small add" data-restore="${h.id}">Back to schedule</button>` : moveBtn(h, day, "btn small")}
       <button class="btn small" data-note-sheet="${h.id}">Add note</button>
     </div>
     <div class="confrow">${confirmControls(h)}</div>
@@ -1420,11 +1446,41 @@ function openSheet(id) {
       ${S.settings.days === 2 ? `<label class="f">Day<select data-field="pin" data-id="${h.id}" ${h.done ? "disabled" : ""}><option value="0" ${!h.pin ? "selected" : ""}>Auto</option><option value="1" ${h.pin === 1 ? "selected" : ""}>Day 1</option><option value="2" ${h.pin === 2 ? "selected" : ""}>Day 2</option></select></label>` : ""}
     </div>
     <label class="f">Our notes from the visit<textarea rows="3" data-field="notes" data-id="${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes)}</textarea></label>
-    <div class="cardfoot">${h.backlog ? `<button class="btn small danger" data-remove="${h.id}" data-tip="${TIP_DELETE}">Delete permanently</button>` : `<button class="btn small danger" data-backlog="${h.id}" data-tip="${TIP_BACKLOG}">Move to backlog</button>`}</div>`;
+    <div class="cardfoot">${h.toured ? `<span class="muted small" style="margin-right:auto">Toured ${esc(fmtDateLong(h.toured.date))}${h.toured.at ? " at " + fmtClock(h.toured.at) : ""}</span>` : ""}${h.toured ? "" : h.backlog ? `<button class="btn small danger" data-remove="${h.id}" data-tip="${TIP_DELETE}">Delete permanently</button>` : `<button class="btn small danger" data-backlog="${h.id}" data-tip="${TIP_BACKLOG}">Move to backlog</button>`}</div>`;
   const dlg = $("#sheet"); if (!dlg.open) dlg.showModal();
 }
 
 /* ---------- main render ---------- */
+const fmtClock = ms => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const fmtDateLong = iso => iso ? new Date(iso + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "";
+function renderToured() {
+  const list = S.homes.filter(h => h.toured);
+  const el = $("#touredList");
+  if (!list.length) { el.innerHTML = `<div class="empty">No toured homes yet. On tour day, tap <b>Start touring</b>, mark homes as visited, then tap <b>End touring</b>: the visited homes move here with their dates and times.</div>`; return; }
+  const logs = S.tourLog || [];
+  const groups = {};
+  for (const h of list) { const k = h.toured.session || ("d-" + h.toured.date); (groups[k] = groups[k] || []).push(h); }
+  const keyOf = k => { const L = logs.find(x => x.id === k); return L ? L.end || L.start : Math.max(...groups[k].map(h => h.toured.at || 0)); };
+  const days = S.settings.days;
+  el.innerHTML = Object.keys(groups).sort((a, b) => keyOf(b) - keyOf(a)).map(k => {
+    const L = logs.find(x => x.id === k), hs = groups[k].sort((a, b) => (a.toured.at || 0) - (b.toured.at || 0));
+    const date = (L && L.date) || hs[0].toured.date, day = (L && L.day) || hs[0].toured.day;
+    const span = L && L.start ? `${fmtClock(L.start)} – ${fmtClock(L.end)}` : "";
+    return `<div class="tgroup"><div class="tghead"><div><div class="eyebrow">${day ? "Day " + day + " tour" : "Tour"}${L && L.tourName ? " · " + esc(L.tourName) : ""}</div><h3>${esc(fmtDateLong(date) || "Date not set")}</h3></div>
+      <div class="muted small">${[span, hs.length + " home" + (hs.length === 1 ? "" : "s")].filter(Boolean).join(" · ")}</div></div>
+      ${hs.map((h, i) => {
+        const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : ""].filter(Boolean).join(" · ");
+        return `<div class="stop" data-open="${h.id}" tabindex="0" role="button" style="--dc:var(--ok)">
+        <div class="stop-top">${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+          <div style="flex:1;min-width:0"><div class="eyebrow">${i + 1}. Visited ${h.toured.at ? fmtClock(h.toured.at) : ""}</div><div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div></div>
+        ${facts ? `<div class="facts">${facts}</div>` : ""}
+        ${h.notes ? `<div class="note-sample" style="white-space:pre-wrap">${esc(h.notes)}</div>` : ""}
+        <div class="cardacts" data-stop>
+          ${days === 2 ? `<button class="btn small add" data-restore="${h.id}" data-day="1">Back to Day 1</button><button class="btn small add" data-restore="${h.id}" data-day="2">Back to Day 2</button>` : `<button class="btn small add" data-restore="${h.id}">Back to schedule</button>`}
+          <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
+        </div></div>`; }).join("")}</div>`;
+  }).join("");
+}
 function renderBacklog() {
   const list = S.homes.filter(h => h.backlog);
   const el = $("#backlogList");
@@ -1456,6 +1512,8 @@ function render() {
   $("#view-map").hidden = t !== "map";
   $("#view-backlog").hidden = t !== "backlog";
   if (t === "backlog") renderBacklog();
+  $("#view-toured").hidden = t !== "toured";
+  if (t === "toured") renderToured();
   renderSetup();
   if (t.startsWith("day")) { renderDay(+t[3]); if (innerWidth >= 1000) { placeMap("day"); drawMap(+t[3]); } }
   if (t === "map") { renderMapView(); placeMap("map"); drawMap(S.mapDay || 0); }
@@ -1475,7 +1533,7 @@ document.getElementById("nameForm").addEventListener("submit", (e) => {
   document.getElementById("nameDlg").close(); checkIn(); renderPresence();
 });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall],[data-agent]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall],[data-agent],[data-tourstart],[data-tourend]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1523,6 +1581,37 @@ document.addEventListener("click", async e => {
   if (t.dataset.agent) { const id = t.dataset.agent; AGENT_OPEN.has(id) ? AGENT_OPEN.delete(id) : AGENT_OPEN.add(id); render(); return; }
   if (t.dataset.collapse) { const h = S.homes.find(x => x.id === t.dataset.collapse); if (h) setCollapsed(h.id, !isCollapsed(h)); render(); return; }
   if (t.dataset.collapseall) { const fold = t.dataset.collapseall === "1"; (PLAN[+S.tab[3]] ? PLAN[+S.tab[3]].order : []).forEach(h => setCollapsed(h.id, fold)); render(); return; }
+  if (t.dataset.tourstart) {
+    const day = +t.dataset.tourstart, st = S.settings;
+    S.touring = { ...(S.touring || {}), ["d" + day]: Date.now() };
+    if (st.dates[day - 1] !== todayISO()) st.dates[day - 1] = todayISO(); // times follow the clock today
+    showToast(`Touring started at ${fmtClock(Date.now())}. Mark homes as visited as you go.`, false);
+    await recompute(); return;
+  }
+  if (t.dataset.tourend) {
+    const day = +t.dataset.tourend, plan = PLAN[day];
+    const visited = plan ? plan.items.filter(x => x.type === "stop" && x.h.done).map(x => x.h) : [];
+    if (!t.classList.contains("armed")) {
+      const old = t.textContent; t.classList.add("armed");
+      t.textContent = visited.length ? `Tap again: move ${visited.length} visited to Toured` : "Tap again to end touring";
+      setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = old; } }, 4000);
+      return;
+    }
+    const now = Date.now(), started = S.touring && S.touring["d" + day];
+    const date = S.settings.dates[day - 1] || todayISO();
+    const sid = "s" + now.toString(36);
+    const first = Math.min(...visited.map(h => h.doneSeq || now));
+    S.tourLog = [...(S.tourLog || []), { id: sid, day, date, start: started || (visited.length ? first : now), end: now, tourName: S.tourName || "" }];
+    for (const h of visited) { h.toured = { date, day, at: h.doneSeq || now, session: sid }; h.pin = 0; }
+    if (S.manual[day]) S.manual[day] = S.manual[day].filter(id => !visited.some(h => h.id === id));
+    if (S.touring) delete S.touring["d" + day];
+    showToast(visited.length ? `Tour ended. Moved ${visited.length} visited home${visited.length === 1 ? "" : "s"} to Toured.` : "Tour ended.", visited.length ? () => {
+      for (const h of visited) delete h.toured;
+      S.tourLog = (S.tourLog || []).filter(x => x.id !== sid);
+      if (started) S.touring = { ...(S.touring || {}), ["d" + day]: started };
+    } : false);
+    await recompute(); return;
+  }
   if (t.dataset.backlog) {
     const h = S.homes.find(x => x.id === t.dataset.backlog); if (!h) return;
     h.backlog = true; h.pin = 0; S.lockDays = true;
@@ -1535,6 +1624,8 @@ document.addEventListener("click", async e => {
     const h = S.homes.find(x => x.id === t.dataset.restore); if (!h) return;
     const want = +t.dataset.day || 0;
     if (want === 2 && S.settings.days === 1) S.settings.days = 2;
+    const wasToured = !!h.toured;
+    if (h.toured) { delete h.toured; h.done = false; h.doneDay = null; h.doneMin = null; h.doneSeq = null; setCollapsed(h.id, null); }
     h.backlog = false; h.pin = S.settings.days === 2 ? want : 0;
     delete S.assign[h.id]; S.lockDays = true;
     if ($("#sheet").open) $("#sheet").close();
