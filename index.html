@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Touring">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
 <title>Property Touring</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="description" content="Your home tour: schedule, route, map, photos and questions for every home. Valenne Real Estate.">
@@ -49,7 +57,7 @@ a{color:var(--gold-ink)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--card)}
 
 /* top bar + tabs */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--card);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:40;background:var(--card);border-bottom:1px solid var(--line)}
 .top .wrap{display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:wrap}
 .brand{display:grid;gap:2px;padding-block:10px;min-width:0}
 .wordmark{font-family:var(--f-head);font-weight:500;font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:var(--head);line-height:1.1;white-space:nowrap}
@@ -288,6 +296,30 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .livedot{width:9px;height:9px;border-radius:50%;background:var(--ok);display:inline-block;animation:pulse 1.6s infinite}
 @keyframes pulse{50%{opacity:.35}}
 button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;pointer-events:none}
+.tabrow{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none;min-width:0}
+.tabrow::-webkit-scrollbar{display:none}
+@media (max-width:640px){
+  .tabrow{flex:1 0 100%;flex-wrap:nowrap;gap:0;margin-right:-8px}
+  .tabrow .tab{padding:10px 9px 11px;font-size:14px}
+  .tabrow .tab .dot{margin-right:4px}
+}
+@media (max-width:520px){
+  .tl-item{grid-template-columns:50px 18px minmax(0,1fr);gap:0 5px}
+  .tl-time{font-size:11.5px}.tl-time small{font-size:10.5px}
+  .stop{padding:10px 10px 10px 11px}
+  .stop .a1{font-size:15.5px}
+  .stop .a2{font-size:12px}
+  .stop-top{gap:9px}
+  .cardacts.oneline{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .cardacts.oneline .btn{justify-content:center;text-align:center;width:100%;padding:7px 6px}
+  .toolbar{gap:6px}
+  .toolbar .btn.ghost{border:1px solid var(--line);background:var(--card)}
+  .toolbar > .muted.small{display:none}
+  .facts{gap:4px 10px}
+  .tourbar{padding:9px 10px}
+}
+.agentbtns{display:flex;gap:6px;flex:none;align-items:center}
+@media (max-width:520px){.agent .who{flex:1 1 100%}.agentbtns .btn{min-width:72px}}
 </style>
 </head>
 <body>
@@ -1055,10 +1087,10 @@ function renderTabs() {
   const gear = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
   $("#tabs").innerHTML = `<button class="setupbtn" data-tab="setup" aria-selected="${S.tab === "setup"}">${gear}Setup</button>
     <button class="clearbtn" data-share>Share</button>
-    <button class="clearbtn" data-clearall disabled aria-disabled="true" title="Turned off so homes can't be cleared by accident">Clear all</button><span class="tabsep" aria-hidden="true"></span>` + tabs.map(([k, l]) => {
+    <button class="clearbtn" data-clearall disabled aria-disabled="true" title="Turned off so homes can't be cleared by accident">Clear all</button><span class="tabsep" aria-hidden="true"></span><div class="tabrow">` + tabs.map(([k, l]) => {
     const dot = k.startsWith("day") ? `<span class="dot" style="background:${dayColor(+k[3])}"></span>` : "";
     return `<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${dot}${l}</button>`;
-  }).join("");
+  }).join("") + `</div>`;
 }
 
 function renderSetup() {
@@ -1242,7 +1274,7 @@ function tlItem(x, day, next) {
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
       <div class="who" data-stop>Contact agent <button class="agentname" type="button" data-agent="${h.id}" aria-expanded="${agentOpen}">${esc(who)} <span aria-hidden="true">${agentOpen ? "▴" : "▾"}</span></button>
         ${agentOpen ? `<small class="agentinfo">${agentInfo.map(esc).join("<br>")}</small>` : ""}</div>
-      ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : h.email ? `<a class="btn small gold" href="${emailLink(h, day, tm)}" data-stop>Email</a>` : `<span class="pill warn">No phone yet</span>`}
+      <div class="agentbtns">${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : h.email ? `<a class="btn small gold" href="${emailLink(h, day, tm)}" data-stop>Email</a>` : `<span class="pill warn">No phone yet</span>`}</div>
       ${rmBtn}
     </div>` : `<div class="agent">${h.pending && !h.photo ? `<span class="pill" style="flex:1 1 auto;justify-self:start">Getting details… usually within 15 min</span>` : `<span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>`}${rmBtn}</div>`;
   return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
