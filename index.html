@@ -186,6 +186,7 @@ label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
 .mapbox{height:min(68vh,640px);border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
 .mapside{display:grid;gap:12px;align-content:start}
 .pin{width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.pin.hl{transform:rotate(-45deg) scale(1.4);box-shadow:0 0 0 3px var(--gold),0 2px 8px rgba(0,0,0,.45);transition:transform .15s}
 .pin span{transform:rotate(45deg);color:#fff;font:600 12px var(--f-body)}
 .pin-se{width:22px;height:22px;border-radius:5px;background:#3a3a3a;border:2px solid #fff;display:grid;place-items:center;color:#fff;font:600 10px var(--f-body);box-shadow:0 1px 4px rgba(0,0,0,.35)}
 .leaflet-popup-content{font:13px/1.45 var(--f-body);margin:12px 14px}
@@ -1180,11 +1181,11 @@ function tlItem(x, day, next) {
     <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
     <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""} ${isCollapsed(h) ? "collapsed" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
       <div class="stop-top"><button class="collapser" type="button" data-collapse="${h.id}" aria-expanded="${!isCollapsed(h)}" aria-label="${isCollapsed(h) ? "Expand" : "Collapse"} ${esc(h.address)}" data-tip="${isCollapsed(h) ? "Show details" : "Collapse this card"}">${isCollapsed(h) ? "▸" : "▾"}</button>${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
-      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
+      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
         <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
-      ${h.assumable || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
+      ${h.assumable || h.photo || (h.openHouse && !/^none/i.test(h.openHouse)) ? `<div class="facts">${asmPill(h)}${h.openHouse && !/^none/i.test(h.openHouse) ? `<span class="small oh">Open house ${esc(h.openHouse)}</span>` : ""}</div>` : ""}
       <div class="confrow" data-stop>${confirmControls(h)}</div>
       <div class="cardacts" data-stop>
         ${visitBtn(h, "btn small")}
@@ -1241,10 +1242,21 @@ async function routeLine(points) {
   return points.map(p => [p.lat, p.lng]);
 }
 let mapToken = 0;
+let MARKERS = {}, SEL_PIN = null;
+function highlightPin(id, pan) {
+  SEL_PIN = id;
+  Object.entries(MARKERS).forEach(([k, m]) => {
+    const el = m.getElement && m.getElement(); const pin = el && el.querySelector(".pin");
+    if (pin) pin.classList.toggle("hl", k === id);
+    m.setZIndexOffset(k === id ? 1000 : 0);
+  });
+  const m = MARKERS[id];
+  if (m && map && pan !== false && !map.getBounds().pad(-0.1).contains(m.getLatLng())) map.panTo(m.getLatLng());
+}
 async function drawMap(onlyDay) {
   ensureMap();
   const tok = ++mapToken;
-  layer.clearLayers();
+  layer.clearLayers(); MARKERS = {};
   const st = S.settings; if (!st.start) return;
   const bounds = [];
   const se = (p, t) => { if (!p) return; L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="pin-se">${t}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] }) }).bindPopup(`<b>${t === "S" ? "Start" : "Return"}</b><br>${esc(p.label)}`).addTo(layer); bounds.push([p.lat, p.lng]); };
@@ -1257,15 +1269,14 @@ async function drawMap(onlyDay) {
     plan.items.filter(x => x.type === "stop").forEach(x => {
       const h = x.h;
       const m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: "", html: `<div class="pin" style="background:${h.done ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim() : col}"><span>${h.done ? "✓" : x.idx + 1}</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26] }) });
-      const other = d === 1 ? 2 : 1;
-      m.bindPopup(`<b>${esc(h.address)}</b><br><span style="color:var(--muted)">Day ${d} · ${fmt(x.arrive)} – ${fmt(x.leave)}</span>
-        <div class="pop-actions"><button class="btn small gold" data-open="${h.id}">Details</button>
-        ${st.days === 2 && !h.done ? `<button class="btn small" data-move="${h.id}" data-to="${other}">Move to Day ${other}</button>` : ""}</div>`);
-      m.addTo(layer); bounds.push([h.lat, h.lng]);
+      m.bindTooltip(`${esc(h.address)} · ${fmt(x.arrive)}`, { direction: "top", offset: [0, -26] });
+      m.on("click", () => { highlightPin(h.id); openSheet(h.id); });
+      m.addTo(layer); bounds.push([h.lat, h.lng]); MARKERS[h.id] = m;
     });
   }
   map.invalidateSize();
   if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+  if (SEL_PIN && MARKERS[SEL_PIN]) highlightPin(SEL_PIN, false);
 }
 function placeMap(where) {
   const box = $("#map");
@@ -1290,7 +1301,8 @@ function renderMapView() {
 const ASM = { confirmed: ["yes", "ok", "Assumable: agent confirmed"], advertised: ["yes", "ok", "Assumable: in the listing"],
   possible: ["maybe", "", "Possibly assumable"], no: ["no", "no", "Not assumable"] };
 function asmPill(h) {
-  const a = h.assumable; if (!a) return "";
+  const a = h.assumable;
+  if (!a) return h.photo || h.summary ? `<span class="pill no" data-tip="Your assumable-loan search (FHA, VA, USDA and adjustable loans in county records) didn't flag this home. It most likely has a regular loan or none, but it hasn't been checked one by one.">Not on your assumable list</span>` : "";
   const [, cls, word] = ASM[a.status] || ASM.possible;
   return `<span class="pill ${cls}">${esc(a.status === "no" ? word : word.split(":")[0] + " · " + a.label)}</span>`;
 }
@@ -1409,7 +1421,7 @@ document.addEventListener("click", async e => {
   if (t.dataset.mapday != null) { S.mapDay = +t.dataset.mapday; save(); render(); return; }
   if (t.id === "toggleOrder") { $("#dayOrder").hidden = !$("#dayOrder").hidden; render(); return; }
   if (t.dataset.close != null) { $("#sheet").close(); return; }
-  if (t.dataset.open) { openSheet(t.dataset.open); return; }
+  if (t.dataset.open) { highlightPin(t.dataset.open); openSheet(t.dataset.open); return; }
   if (t.dataset.note) { NOTE_EDIT = t.dataset.note; render(); const ta = document.getElementById("note-" + NOTE_EDIT); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } return; }
   if (t.dataset.notedone) { const ta = document.getElementById("note-" + t.dataset.notedone); const h = S.homes.find(x => x.id === t.dataset.notedone); if (ta && h) h.notes = ta.value.trim(); NOTE_EDIT = null; save(); render(); return; }
   if (t.hasAttribute("data-addmore")) { $("#dayAddForm").hidden = false; $("#dayAdd").scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => $("#dayAddInput").focus(), 300); return; }
