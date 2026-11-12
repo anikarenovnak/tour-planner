@@ -255,7 +255,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
             <div class="eyebrow">Step 1</div>
             <h2 style="font-size:22px">Homes to tour</h2>
           </div>
-          <label class="f">Paste Redfin links, one per line
+          <label class="f">Paste Redfin or Zillow links, or type addresses (one per line)
             <textarea id="links" rows="4" placeholder="https://www.redfin.com/CA/San-Diego/1234-Main-St-92126/home/12345678"></textarea>
           </label>
           <div class="row" style="align-items:center">
@@ -315,7 +315,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
               <select id="traffic"><option value="1">Light</option><option value="1.25">Normal LA traffic</option><option value="1.5">Heavy</option></select>
             </label>
             <label class="f">Lunch length
-              <select id="lunchMin"><option value="0">No lunch</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hour</option></select>
+              <select id="lunchMin"><option value="0">No lunch</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option></select>
             </label>
             <label class="f">Lunch around
               <input type="time" id="lunchAt">
@@ -346,7 +346,7 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
           <button class="btn gold small" id="dayAddToggle" style="justify-self:start">+ Add a home to this day</button>
           <div id="dayAddForm" hidden class="stack" style="gap:8px">
             <div class="row">
-              <input type="text" id="dayAddInput" placeholder="Paste a Redfin link or type an address">
+              <input type="text" id="dayAddInput" placeholder="Paste Redfin or Zillow links, or type an address">
               <button class="btn gold small" id="dayAddGo" style="flex:0 0 auto">Add</button>
             </div>
             <div class="status muted small" id="dayAddStatus"></div>
@@ -784,15 +784,30 @@ function clearSampleIfNeeded() {
   if (S.settings.start && S.settings.start.label === SAMPLE_TOUR.start.label) { S.settings.start = null; $("#placeStatus").textContent = "Type your starting address above."; }
 }
 // Adds one home from a Redfin link or a typed address. Returns a message.
+// Zillow: zillow.com/homedetails/1311-Braeridge-Dr-Beverly-Hills-CA-90210/20523119_zpid/
+function parseZillow(url) {
+  const m = url.match(/zillow\.com\/homedetails\/([^/?#]+)\/(\d+)_zpid/i);
+  if (!m) return null;
+  const zip = (m[1].match(/(\d{5})$/) || [])[1] || "";
+  return { url: `https://www.zillow.com/homedetails/${m[1]}/${m[2]}_zpid/`, text: m[1].replace(/-/g, " "), zip };
+}
 async function addHome(line, pinDay) {
-  const p = parseRedfin(line);
+  line = line.trim();
+  const p = parseRedfin(line), zl = p ? null : parseZillow(line);
   let home;
-  if (p) {
+  if (zl) {
+    if (S.homes.some(h => h.url === zl.url || h.zillowUrl === zl.url)) return { ok: false, msg: "That home is already on the tour." };
+    const g = await geocode(zl.text);
+    if (!g) return { ok: false, msg: "Couldn't find the address in that Zillow link. Try the Redfin link or type the address." };
+    const parts = (g.label || zl.text).split(",").map(x => x.trim());
+    home = { url: zl.url, zillowUrl: zl.url, address: parts[0], city: parts[1] || "", zip: zl.zip, lat: g.lat, lng: g.lng };
+    if (S.homes.some(h => h.address.toLowerCase() === home.address.toLowerCase())) return { ok: false, msg: `${home.address} is already on the tour.` };
+  } else if (p) {
     if (S.homes.some(h => h.url === p.url)) return { ok: false, msg: `${p.address} is already on the tour.` };
     const g = await geocode(`${p.address.replace(/ #.*/, "")}, ${p.city}, ${p.state} ${p.zip}`);
     home = { ...p, lat: g ? g.lat : null, lng: g ? g.lng : null };
   } else {
-    if (/^https?:/i.test(line)) return { ok: false, msg: "That link isn't a Redfin home link. Paste the Redfin link or type the address." };
+    if (/^https?:/i.test(line)) return { ok: false, msg: "That link isn't a Redfin or Zillow home link. Paste one of those, or type the address." };
     const g = await geocode(line);
     if (!g) return { ok: false, msg: `Couldn't find "${line}". Add the city and ZIP.` };
     const parts = line.split(",").map(x => x.trim());
@@ -800,35 +815,41 @@ async function addHome(line, pinDay) {
     home = { url: `https://www.redfin.com/search?q=${encodeURIComponent(line)}`, address: parts[0], city: (parts[1] || "").replace(/\b[A-Z]{2}\b.*$/, "").trim(), zip, lat: g.lat, lng: g.lng };
     if (S.homes.some(h => h.address.toLowerCase() === home.address.toLowerCase())) return { ok: false, msg: `${home.address} is already on the tour.` };
   }
-  S.homes.push({ id: uid(), pin: pinDay || 0, done: false, notes: "", asked: [], pending: !!p, addedAt: Date.now(), agent: "", phone: "", contact: "", showing: "",
+  S.homes.push({ id: uid(), pin: pinDay || 0, done: false, notes: "", asked: [], pending: true, addedAt: Date.now(), agent: "", phone: "", contact: "", showing: "",
     summary: "", highlights: [], concerns: [], questions: [], ...home });
   return { ok: true, msg: home.lat == null ? `Added ${home.address}, but couldn't place it on the map.` : `Added ${home.address}.`, name: home.address };
 }
-async function addLinks() {
-  const lines = $("#links").value.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
-  if (!lines.length) { $("#addStatus").textContent = "Paste at least one Redfin link."; return; }
-  clearSampleIfNeeded();
-  let added = 0, bad = [], noLoc = [];
-  for (const [i, line] of lines.entries()) {
-    const p = parseRedfin(line);
-    if (!p) { bad.push(line); continue; }
-    if (S.homes.some(h => h.url === p.url)) continue;
-    $("#addStatus").textContent = `Finding ${p.address} (${i + 1} of ${lines.length})...`;
-    const g = await geocode(`${p.address.replace(/ #.*/, "")}, ${p.city}, ${p.state} ${p.zip}`);
-    if (!g) noLoc.push(p.address);
-    S.homes.push({ id: uid(), pin: 0, done: false, notes: "", asked: [], pending: true, addedAt: Date.now(), ...p, lat: g ? g.lat : null, lng: g ? g.lng : null,
-      agent: "", phone: "", contact: "", showing: "", summary: "", highlights: [], concerns: [], questions: [] });
-    added++;
-    await sleep(1000); // geocoder asks for 1 request per second
+// Pasted text -> one entry per link, or per line when a line has no link (a typed address)
+function splitEntries(text) {
+  const out = [];
+  text.split(/\n+/).forEach((line) => {
+    const urls = line.match(/https?:\/\/\S+/g);
+    if (urls) urls.forEach((u) => out.push(u.replace(/[),.;]+$/, "")));
+    else if (line.trim()) out.push(line.trim());
+  });
+  return out;
+}
+async function addMany(text, pinDay, status) {
+  const items = splitEntries(text);
+  let added = 0; const bad = [];
+  for (const [i, it] of items.entries()) {
+    status(`Adding ${i + 1} of ${items.length}...`);
+    const r = await addHome(it, pinDay);
+    if (r.ok) added++; else bad.push(r.msg);
+    if (i < items.length - 1) await sleep(400);
   }
+  return { added, bad, total: items.length };
+}
+async function addLinks() {
+  const text = $("#links").value;
+  if (!text.trim()) { $("#addStatus").textContent = "Paste Redfin or Zillow links, or type addresses (one per line)."; return; }
+  clearSampleIfNeeded();
+  const r = await addMany(text, 0, (m) => { $("#addStatus").textContent = m; });
   $("#links").value = "";
-  let msg = `Added ${added} home${added === 1 ? "" : "s"}.`;
-  if (bad.length) msg += ` ${bad.length} link${bad.length === 1 ? " wasn't" : "s weren't"} a Redfin home link.`;
-  if (noLoc.length) msg += ` Couldn't place on the map: ${noLoc.join(", ")}.`;
-  $("#addStatus").textContent = msg;
+  $("#addStatus").textContent = `Added ${r.added} home${r.added === 1 ? "" : "s"}.` + (r.added ? " Details fill in automatically, usually within 15 minutes." : "") + (r.bad.length ? " " + r.bad.join(" ") : "");
   S.manual = { 1: null, 2: null };
   replan();
-  if (added) flagForDetails();
+  if (r.added) flagForDetails();
 }
 
 /* ---------- rendering ---------- */
@@ -970,7 +991,7 @@ const sel = (attr, val, opts) => `<select ${attr}>${opts.map(([v, l]) => `<optio
 function lunchForm() {
   const st = S.settings;
   return `<div class="editf grid2">
-    <label class="f">Lunch length${sel('data-set="lunchMin"', st.lunchMin, [[0, "No lunch"], [30, "30 min"], [45, "45 min"], [60, "1 hour"], [90, "1.5 hours"]])}</label>
+    <label class="f">Lunch length${sel('data-set="lunchMin"', st.lunchMin, [[0, "No lunch"], [30, "30 min"], [45, "45 min"], [60, "1 hour"], [90, "1.5 hours"], [120, "2 hours"]])}</label>
     <label class="f">Lunch around<input type="time" data-set="lunchAt" value="${st.lunchAt}"></label></div>`;
 }
 function placeCard(x, day) {
@@ -1038,7 +1059,7 @@ function tlItem(x, day, next) {
       <div class="cardacts" data-stop>
         ${visitBtn(h, "btn small")}
         ${moveBtn(h, day, "btn small")}
-        <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">Redfin</a>
+        <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
         <a class="btn small" href="${dirUrl(h)}" target="_blank" rel="noopener">Directions</a>
       </div>
       ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
@@ -1168,7 +1189,7 @@ function openSheet(id) {
     <div class="facts" style="font-size:14px">${[h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : ""].filter(Boolean).join(" · ")}</div>
     <div class="actions">
       ${visitBtn(h, "btn")}
-      <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on Redfin</a>
+      <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
       <a class="btn" target="_blank" rel="noopener" href="${dirUrl(h)}">Directions</a>
       ${moveBtn(h, day, "btn")}
       <button class="btn" data-note-sheet="${h.id}">Add note</button>
@@ -1345,9 +1366,9 @@ async function addFromDay() {
   clearSampleIfNeeded();
   $("#dayAddStatus").textContent = "Finding it...";
   S.lockDays = true;
-  const r = await addHome(v, S.settings.days === 2 ? day : 0);
-  $("#dayAddStatus").textContent = r.ok ? `${r.msg} The schedule was re-planned. Tap the home to add the agent's phone.` : r.msg;
-  if (r.ok) { $("#dayAddInput").value = ""; await recompute(); flagForDetails(); }
+  const r = await addMany(v, S.settings.days === 2 ? day : 0, (m) => { $("#dayAddStatus").textContent = m; });
+  $("#dayAddStatus").textContent = (r.added ? `Added ${r.added} home${r.added === 1 ? "" : "s"}. Details fill in automatically, usually within 15 minutes.` : "") + (r.bad.length ? " " + r.bad.join(" ") : "");
+  if (r.added) { $("#dayAddInput").value = ""; await recompute(); flagForDetails(); }
 }
 $("#dayAddGo").onclick = addFromDay;
 $("#dayAddInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addFromDay(); } });
