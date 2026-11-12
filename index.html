@@ -503,7 +503,8 @@ try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
 /* ---------- live sync (Firebase Realtime Database) ---------- */
 const DB = "https://valenne-tour-planner-default-rtdb.firebaseio.com"; // Firebase project "Valenne Tour Planner"
 let LIVE = DB && TOUR ? TOUR : "";
-const CLIENT = Math.random().toString(36).slice(2);
+// One id per browser tab, kept across reloads, so a refresh doesn't show up as a new person
+const CLIENT = (() => { try { let c = sessionStorage.getItem("tp-client"); if (!c) { c = Math.random().toString(36).slice(2); sessionStorage.setItem("tp-client", c); } return c; } catch (e) { return Math.random().toString(36).slice(2); } })();
 let lastSent = "", pushT = null, es = null, applying = false;
 const onSched = h => !h.backlog && !h.toured;
 const sharedPart = st => { const o = JSON.parse(JSON.stringify(st)); delete o.tab; delete o.mapDay; delete o.sharedIn; return o; };
@@ -589,12 +590,13 @@ function renderPresence() {
   const el = document.getElementById("presence"); if (!el) return;
   if (!LIVE) { el.hidden = true; return; }
   const now = Date.now();
-  const others = Object.entries(HERE).filter(([id, p]) => id !== CLIENT && p && now - p.at < 60000);
+  const others = Object.entries(HERE).filter(([id, p]) => id !== CLIENT && p && now - p.at < 120000);
   el.hidden = false;
   const me = myName() || "You";
-  el.innerHTML = `<span class="pav me" style="background:${colorFor(CLIENT)}" data-tip="${esc(myName() ? "You (" + myName() + "). Tap to change your name." : "You. Tap to add your name so others see who's here.")}" data-setname>${esc(initials(myName() || "You"))}</span>` +
+  const html = `<span class="pav me" style="background:${colorFor(CLIENT)}" data-tip="${esc(myName() ? "You (" + myName() + "). Tap to change your name." : "You. Tap to add your name so others see who's here.")}" data-setname>${esc(initials(myName() || "You"))}</span>` +
     others.map(([id, p]) => `<span class="pav" style="background:${colorFor(id)}" data-tip="${esc((p.name || "Guest") + " is viewing this tour")}">${esc(initials(p.name || "Guest"))}</span>`).join("") +
     (others.length ? `<span class="pnames">${others.length === 1 ? esc(others[0][1].name || "Someone") + " is here" : others.length + " others here"}</span>` : "");
+  if (el.innerHTML !== html && el.dataset.h !== html) { el.innerHTML = html; el.dataset.h = html; }
 }
 function startPresence() {
   if (!LIVE) return;
@@ -614,7 +616,7 @@ function startPresence() {
   renderPresence();
 }
 addEventListener("pagehide", leave);
-document.addEventListener("visibilitychange", () => { if (document.hidden) leave(); else checkIn(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkIn(); }); // switching apps doesn't remove you; you fade out after 2 min away
 function askName() {
   const d = document.getElementById("nameDlg"); if (!d) return;
   document.getElementById("nameInput").value = myName();
