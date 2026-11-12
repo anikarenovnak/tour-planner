@@ -842,8 +842,14 @@ const shortPlace = p => p ? (p.label || "").split(",").slice(0, 2).join(",") : "
 
 function smsLink(h, day, time) {
   const first = (h.contact || h.agent || "").split(/[ (]/)[0];
-  const date = S.settings.dates[day - 1] ? new Date(S.settings.dates[day - 1] + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }) : "our tour day";
-  const body = `Hi ${first || "there"}, this is Ani Valenne with Keller Williams. I'd like to show ${h.address} on ${date} around ${time}. Does that work?`;
+  // Day, date and time come from where this home sits on the schedule
+  const iso = S.settings.dates[day - 1];
+  const d = iso ? new Date(iso + "T12:00") : null;
+  const when = d
+    ? `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`
+    : "our tour day";
+  const link = /redfin\.com\/.+\/home\//.test(h.url || "") ? h.url.split("?")[0] : (h.url || "");
+  const body = `Hi ${first || "there"}, I'm an agent and my clients would love to schedule a private tour to see this property on ${when} at ${time}. Can that be arranged?` + (link ? `\n\n${link}` : "");
   return `sms:${telDigits(h.phone)}?&body=${encodeURIComponent(body)}`;
 }
 
