@@ -367,6 +367,12 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
   </section>
 
   <!-- MAP -->
+  <section class="view" id="view-backlog" hidden>
+    <div class="dayhead"><div><div class="eyebrow">Saved for later</div><h2>Backlog</h2></div></div>
+    <p class="muted" style="margin:0 0 14px">Homes you took off the schedule but haven't seen yet. Put one back on a day, or delete it for good.</p>
+    <div id="backlogList" class="stack"></div>
+  </section>
+
   <section class="view" id="view-map" hidden>
     <div class="mapview">
       <div id="mapHome"><div class="mapbox" id="map"></div></div>
@@ -597,7 +603,7 @@ const endPoint = () => S.settings.sameEnd ? S.settings.start : (S.settings.end |
 const stopMin = h => (h.showMin || S.settings.showMin) + S.settings.buffer;
 
 function assignDays() {
-  const st = S.settings, homes = S.homes.filter(h => h.lat != null);
+  const st = S.settings, homes = S.homes.filter(h => h.lat != null && !h.backlog);
   const res = new Map();
   if (st.days === 1) { homes.forEach(h => res.set(h.id, 1)); return res; }
   const anyDone = homes.some(h => h.done) || S.lockDays; // keep homes on their day once the tour is underway or edited on a day tab
@@ -657,7 +663,7 @@ function orderWithBookings(day, from, B, rest, doneCount) {
 }
 function dayOrder(day, assignment) {
   const A = S.settings.start, B = endPoint();
-  const hs = S.homes.filter(h => h.lat != null && assignment.get(h.id) === day);
+  const hs = S.homes.filter(h => h.lat != null && !h.backlog && assignment.get(h.id) === day);
   const done = hs.filter(h => h.done).sort((a, b) => (a.doneSeq || 0) - (b.doneSeq || 0));
   const rest = hs.filter(h => !h.done);
   const from = done.length ? done[done.length - 1] : A;
@@ -721,7 +727,7 @@ let PLAN = { 1: null, 2: null };
 async function recompute() {
   const st = S.settings;
   if (!st.start) { PLAN = { 1: null, 2: null }; render(); return; }
-  const pts = [st.start, endPoint(), ...S.homes.filter(h => h.lat != null)];
+  const pts = [st.start, endPoint(), ...S.homes.filter(h => h.lat != null && !h.backlog)];
   await loadMatrix(pts);
   const assignment = assignDays();
   assignment.forEach((d, id) => S.assign[id] = d);
@@ -908,6 +914,8 @@ function renderTabs() {
   const tabs = [["day1", "Day 1"]];
   if (S.settings.days === 2) tabs.push(["day2", "Day 2"]);
   tabs.push(["map", "Map"]);
+  const nb = S.homes.filter(h => h.backlog).length;
+  tabs.push(["backlog", "Backlog" + (nb ? ` (${nb})` : "")]);
   if (S.tab === "day2" && S.settings.days === 1) S.tab = "day1";
   const gear = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
   $("#tabs").innerHTML = `<button class="setupbtn" data-tab="setup" aria-selected="${S.tab === "setup"}">${gear}Setup</button>
@@ -1011,8 +1019,10 @@ function confirmControls(h) {
     <label class="timeset">Booked time <input type="time" data-fixed="${h.id}" value="${esc(h.fixedTime || "")}" aria-label="Booked showing time for ${esc(h.address)}"></label>
     ${h.fixedTime ? `<button class="btn ghost rm" data-clearfixed="${h.id}">Clear time</button>` : ""}`;
 }
+let UNDO_FN = null;
 function showToast(msg, undo = true) {
   const el = document.getElementById("toast");
+  if (typeof undo === "function") UNDO_FN = undo; else if (undo) UNDO_FN = null;
   el.innerHTML = `<span>${esc(msg)}</span>${undo ? `<button class="btn small" data-undo>Undo</button>` : ""}`;
   el.hidden = false; clearTimeout(toastT); toastT = setTimeout(hideToast, 7000);
 }
@@ -1092,7 +1102,7 @@ function tlItem(x, day, next) {
         <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
         <a class="btn small" href="${dirUrl(h)}" target="_blank" rel="noopener">Directions</a>
       </div>
-      <div class="cardacts pairrow" data-stop>${moveBtn(h, day, "btn small")}<button class="btn small danger" data-remove="${h.id}" aria-label="Remove ${esc(h.address)} from the tour">Remove</button></div>
+      <div class="cardacts pairrow" data-stop>${moveBtn(h, day, "btn small")}<button class="btn small danger" data-backlog="${h.id}" aria-label="Move ${esc(h.address)} to the backlog">Move to backlog</button></div>
       ${x.late > 0 ? `<div class="lateline">You'd arrive about ${dur(x.late)} after the booked ${fmt(x.fixed)} time. Change the order or the time.</div>` : ""}
       ${NOTE_EDIT === h.id ? `<div class="noteedit" data-stop><textarea data-field="notes" data-id="${h.id}" id="note-${h.id}" placeholder="Likes, dislikes, follow-ups...">${esc(h.notes || "")}</textarea>
           <button class="btn small gold" data-notedone="${h.id}" style="justify-self:start">Save note</button></div>`
@@ -1223,7 +1233,7 @@ function openSheet(id) {
       <a class="btn" href="${esc(h.url)}" target="_blank" rel="noopener">View on ${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
       <a class="btn" target="_blank" rel="noopener" href="${dirUrl(h)}">Directions</a>
       <button class="btn" data-note-sheet="${h.id}">Add note</button>
-      <span class="pairrow">${moveBtn(h, day, "btn")}<button class="btn danger" data-remove="${h.id}">Remove from tour</button></span>
+      <span class="pairrow">${moveBtn(h, day, "btn")}${h.backlog ? `<button class="btn" data-restore="${h.id}">Back to schedule</button><button class="btn danger" data-remove="${h.id}">Delete permanently</button>` : `<button class="btn danger" data-backlog="${h.id}">Move to backlog</button>`}</span>
     </div>
     <div class="confrow">${confirmControls(h)}</div>
     ${!filled ? `<div class="note-sample">${h.pending ? "Getting the photos, agent, summary, concerns, questions and assumable notes. They appear here automatically, usually within 15 minutes." : "Details aren't filled in for this home. Add it from its Redfin link and they fill in automatically."}</div>` : ""}
@@ -1252,6 +1262,28 @@ function openSheet(id) {
 }
 
 /* ---------- main render ---------- */
+function renderBacklog() {
+  const list = S.homes.filter(h => h.backlog);
+  const el = $("#backlogList");
+  if (!list.length) { el.innerHTML = `<div class="empty">No homes in the backlog. Use "Move to backlog" on any home in the schedule to save it for later.</div>`; return; }
+  const days = S.settings.days;
+  el.innerHTML = list.map(h => {
+    const lotTxt = h.lot ? String(h.lot).replace(/\s*\(.*\)$/, "") : "";
+    const facts = [h.price ? `<b>${money(h.price)}</b>` : "", h.beds ? h.beds + " bd" : "", h.baths ? h.baths + " ba" : "", h.sqft ? Number(h.sqft).toLocaleString() + " sq ft" : "", lotTxt ? esc(lotTxt) + " lot" : ""].filter(Boolean).join(" · ");
+    return `<div class="stop" data-open="${h.id}" tabindex="0" role="button" style="--dc:var(--line)">
+      <div class="stop-top">${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+        <div style="flex:1;min-width:0"><div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div></div>
+      ${facts ? `<div class="facts">${facts}</div>` : ""}
+      ${h.yard ? `<div class="facts yardline"><span>Yard: ${esc(h.yard)}</span></div>` : ""}
+      ${h.assumable ? `<div class="facts">${asmPill(h)}</div>` : ""}
+      <div class="cardacts" data-stop>
+        ${days === 2 ? `<button class="btn small add" data-restore="${h.id}" data-day="1">Add to Day 1</button><button class="btn small add" data-restore="${h.id}" data-day="2">Add to Day 2</button>` : `<button class="btn small add" data-restore="${h.id}">Back to schedule</button><button class="btn small" data-restore="${h.id}" data-day="2">Add to Day 2</button>`}
+        <a class="btn small" href="${esc(h.url)}" target="_blank" rel="noopener">${/zillow\.com/.test(h.url || "") ? "Zillow" : "Redfin"}</a>
+        <button class="btn small danger" data-remove="${h.id}">Delete permanently</button>
+      </div>
+    </div>`;
+  }).join("");
+}
 function render() {
   renderTabs();
   $("#brandName").textContent = S.tourName ? " · " + S.tourName : "";
@@ -1259,6 +1291,8 @@ function render() {
   $("#view-setup").hidden = t !== "setup";
   $("#view-day").hidden = !t.startsWith("day");
   $("#view-map").hidden = t !== "map";
+  $("#view-backlog").hidden = t !== "backlog";
+  if (t === "backlog") renderBacklog();
   renderSetup();
   if (t.startsWith("day")) { renderDay(+t[3]); if (innerWidth >= 1000) { placeMap("day"); drawMap(+t[3]); } }
   if (t === "map") { renderMapView(); placeMap("map"); drawMap(S.mapDay || 0); }
@@ -1268,7 +1302,7 @@ function render() {
 /* ---------- events ---------- */
 document.addEventListener("click", e => { if (e.target.closest("[data-closeshare]") || e.target === $("#shareDlg")) $("#shareDlg").close(); });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1309,10 +1343,34 @@ document.addEventListener("click", async e => {
   if (t.dataset.noteSheet) { const ta = document.querySelector(`#sheetIn textarea[data-field="notes"]`); if (ta) { ta.scrollIntoView({ behavior: "smooth", block: "center" }); ta.focus(); } return; }
   if (t.dataset.clearfixed) { const h = S.homes.find(x => x.id === t.dataset.clearfixed); if (h) { delete h.fixedTime; h.fixedTime = ""; } await recompute(); return; }
   if (t.hasAttribute("data-undo")) {
+    if (UNDO_FN) { const f = UNDO_FN; UNDO_FN = null; f(); hideToast(); await recompute(); return; }
     if (LAST_REMOVED) { const { home, index, assign } = LAST_REMOVED; S.homes.splice(Math.min(index, S.homes.length), 0, home); if (assign) S.assign[home.id] = assign; LAST_REMOVED = null; }
     hideToast(); await recompute(); return;
   }
+  if (t.dataset.backlog) {
+    const h = S.homes.find(x => x.id === t.dataset.backlog); if (!h) return;
+    h.backlog = true; h.pin = 0; S.lockDays = true;
+    for (const d of [1, 2]) if (S.manual[d]) S.manual[d] = S.manual[d].filter(x => x !== h.id);
+    if ($("#sheet").open) $("#sheet").close();
+    showToast(`Moved ${h.address} to the backlog.`, () => { h.backlog = false; });
+    await recompute(); return;
+  }
+  if (t.dataset.restore) {
+    const h = S.homes.find(x => x.id === t.dataset.restore); if (!h) return;
+    const want = +t.dataset.day || 0;
+    if (want === 2 && S.settings.days === 1) S.settings.days = 2;
+    h.backlog = false; h.pin = S.settings.days === 2 ? want : 0;
+    delete S.assign[h.id]; S.lockDays = true;
+    if ($("#sheet").open) $("#sheet").close();
+    showToast(`Put ${h.address} back on the schedule.`, false);
+    await recompute(); return;
+  }
   if (t.dataset.remove) {
+    if (t.closest("#view-backlog, #sheet") && !t.classList.contains("armed")) {
+      const old = t.textContent; t.classList.add("armed"); t.textContent = "Tap again to delete for good";
+      setTimeout(() => { if (t.isConnected) { t.classList.remove("armed"); t.textContent = old; } }, 3500);
+      return;
+    }
     const id = t.dataset.remove;
     const index = S.homes.findIndex(h => h.id === id);
     if (index >= 0) { LAST_REMOVED = { home: S.homes[index], index, assign: S.assign[id] }; showToast(`Removed ${S.homes[index].address}.`); }
