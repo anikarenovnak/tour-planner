@@ -677,7 +677,17 @@ const dur = m => { m = Math.round(m); const h = Math.floor(m / 60), mm = m % 60;
 const money = n => n ? "$" + Number(n).toLocaleString("en-US") : "";
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
-const isLive = day => S.settings.dates[day - 1] && S.settings.dates[day - 1] === todayISO();
+// A day's date: the one picked, else the day after the previous day's date (Day 2 = Day 1 + 1)
+function dayISO(day, st) {
+  st = st || S.settings; const ds = st.dates || [];
+  if (ds[day - 1]) return ds[day - 1];
+  for (let k = day - 1; k >= 1; k--) if (ds[k - 1]) {
+    const d = new Date(ds[k - 1] + "T12:00"); d.setDate(d.getDate() + (day - k));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  return "";
+}
+const isLive = day => dayISO(day) && dayISO(day) === todayISO();
 
 /* ---------- travel times (OSRM, with straight-line fallback) ---------- */
 const travel = {}; // "lat,lng|lat,lng" -> {s: seconds, m: meters}
@@ -711,7 +721,7 @@ function trafficFactor(day, tMin) {
   const mode = trafficMode();
   if (mode !== "auto") return mode;
   if (tMin == null) return 1.4; // route planning: a typical midday drive
-  const iso = day ? S.settings.dates[day - 1] : "";
+  const iso = day ? dayISO(day) : "";
   const wd = iso ? new Date(iso + "T12:00").getDay() : 3;
   const h = tMin / 60;
   if (wd === 0 || wd === 6) return h >= 10 && h < 19 ? 1.3 : 1.15;
@@ -894,7 +904,7 @@ async function recompute() {
   if (![1, 2].some(isLive)) {
     const sched = {};
     for (const d of [1, 2]) (PLAN[d] ? PLAN[d].items : []).forEach((x) => {
-      if (x.type === "stop") sched[x.h.id] = { day: d, date: st.dates[d - 1] || "", time: fmt(x.arrive), order: x.idx + 1 };
+      if (x.type === "stop") sched[x.h.id] = { day: d, date: dayISO(d, st), time: fmt(x.arrive), order: x.idx + 1 };
     });
     S.sched = sched;
   }
@@ -1062,7 +1072,7 @@ const shortPlace = p => p ? (p.label || "").split(",").slice(0, 2).join(",") : "
 function tourMessage(h, day, time) {
   const first = (h.contact || h.agent || "").split(/[ (]/)[0];
   // Day, date and time come from where this home sits on the schedule
-  const iso = S.settings.dates[day - 1];
+  const iso = dayISO(day);
   const d = iso ? new Date(iso + "T12:00") : null;
   const when = d
     ? `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`
@@ -1105,7 +1115,7 @@ function renderSetup() {
   if (!dt.contains(document.activeElement)) {
     dt.innerHTML = [1, 2].slice(0, st.days).map(d => `
       <div class="grid2">
-        <label class="f"><span><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dayColor(d)};margin-right:6px"></span>Day ${d} date (optional)</span><input type="date" data-date="${d}" value="${st.dates[d - 1] || ""}"></label>
+        <label class="f"><span><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dayColor(d)};margin-right:6px"></span>Day ${d} date (optional)</span><input type="date" data-date="${d}" value="${dayISO(d, st)}"></label>
         <label class="f">Day ${d} start time<input type="time" data-start="${d}" value="${st.dayStart[d - 1]}"></label>
       </div>`).join("");
   }
@@ -1143,7 +1153,7 @@ function tourBar(day, s) {
 function renderDay(day) {
   const plan = PLAN[day], st = S.settings;
   $("#view-day").style.setProperty("--dc", dayColor(day));
-  $("#dayEyebrow").textContent = st.dates[day - 1] ? new Date(st.dates[day - 1] + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : `Day ${day}`;
+  $("#dayEyebrow").textContent = dayISO(day, st) ? new Date(dayISO(day, st) + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : `Day ${day}`;
   $("#dayTitle").textContent = `Day ${day} tour`;
   if (!st.start) { $("#timeline").innerHTML = placeCard({ type: "start", t: toMin(st.dayStart[day - 1]), place: null }, day); $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = `<div class="banner"><b>Add your starting address</b> <span class="muted">to build the schedule.</span></div>`; return; }
   if (!plan || !plan.order.length) { $("#timeline").innerHTML = `<div class="empty">No homes on this day yet.</div>`; $("#dayStats").innerHTML = ""; $("#dayToolbar").innerHTML = ""; $("#dayBanner").innerHTML = ""; return; }
@@ -1228,7 +1238,7 @@ function placeCard(x, day) {
         <button class="btn small gold" data-setplace="start" style="flex:0 0 auto">Set</button></div></label>
       <div class="grid2">
         <label class="f">Day ${day} start time<input type="time" data-start="${day}" value="${st.dayStart[day - 1]}"></label>
-        <label class="f">Day ${day} date (optional)<input type="date" data-date="${day}" value="${st.dates[day - 1] || ""}"></label>
+        <label class="f">Day ${day} date (optional)<input type="date" data-date="${day}" value="${dayISO(day, st)}"></label>
         <label class="f">Time at each home${sel('data-set="showMin"', st.showMin, [[15, "15 min"], [20, "20 min"], [30, "30 min"], [45, "45 min"], [60, "1 hour"]])}</label>
         <label class="f">Traffic${sel('data-set="traffic"', trafficMode(), [["auto", "Changes with time of day"], [1, "Light all day"], [1.25, "Normal all day"], [1.5, "Heavy all day"]])}</label>
         <label class="f">Extra time between homes${sel('data-set="cushion"', st.cushion ?? 0, [[0, "None"], [5, "5 min"], [10, "10 min"], [15, "15 min"]])}</label>
@@ -1634,7 +1644,7 @@ document.addEventListener("click", async e => {
       return;
     }
     const now = Date.now(), started = S.touring && S.touring["d" + day];
-    const date = S.settings.dates[day - 1] || todayISO();
+    const date = dayISO(day) || todayISO();
     const sid = "s" + now.toString(36);
     const first = Math.min(...visited.map(h => h.doneSeq || now));
     S.tourLog = [...(S.tourLog || []), { id: sid, day, date, start: started || (visited.length ? first : now), end: now, tourName: S.tourName || "" }];
