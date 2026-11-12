@@ -228,6 +228,12 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;gap:12px;align-items:center;background:var(--head);color:var(--card);padding:10px 12px 10px 16px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:calc(100% - 32px);font-size:13.5px}
 .toast .btn{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
 .stop-top{display:flex;gap:12px;align-items:start}
+.collapser{flex:none;order:3;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:6px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;font-size:13px;line-height:1;padding:0}
+.collapser:hover{border-color:var(--gold);color:var(--head)}
+.stop.collapsed{gap:0;padding-block:8px}
+.stop.collapsed > :not(.stop-top){display:none}
+.stop.collapsed .thumb{width:56px;height:42px}
+.stop.collapsed .a2{display:none}
 .cardnote{background:var(--bg);border-radius:8px;padding:8px 10px;font-size:13px;white-space:pre-wrap;cursor:text}
 .cardnote b{font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);display:block}
 .noteedit{display:grid;gap:6px}.noteedit textarea{min-height:70px}
@@ -968,7 +974,7 @@ const carIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" str
 const fullAddr = h => `${h.address}, ${h.city}${h.zip ? " " + h.zip : ""}`;
 const shortPlace = p => p ? (p.label || "").split(",").slice(0, 2).join(",") : "";
 
-function smsLink(h, day, time) {
+function tourMessage(h, day, time) {
   const first = (h.contact || h.agent || "").split(/[ (]/)[0];
   // Day, date and time come from where this home sits on the schedule
   const iso = S.settings.dates[day - 1];
@@ -977,8 +983,11 @@ function smsLink(h, day, time) {
     ? `${d.toLocaleDateString("en-US", { weekday: "long" })}, ${d.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`
     : "our tour day";
   const link = /redfin\.com\/.+\/home\//.test(h.url || "") ? h.url.split("?")[0] : (h.url || "");
-  const body = `Hi ${first || "there"}, I'm an agent and my clients would love to schedule a private tour to see this property on ${when} at ${time}. Can that be arranged?` + (link ? `\n\n${link}` : "");
-  return `sms:${telDigits(h.phone)}?&body=${encodeURIComponent(body)}`;
+  return `Hi ${first || "there"}, I'm an agent and my clients would love to schedule a private tour to see this property on ${when} at ${time}. Can that be arranged?` + (link ? `\n\n${link}` : "");
+}
+function smsLink(h, day, time) { return `sms:${telDigits(h.phone)}?&body=${encodeURIComponent(tourMessage(h, day, time))}`; }
+function emailLink(h, day, time) {
+  return `mailto:${encodeURIComponent(h.email || "")}?subject=${encodeURIComponent("Private tour request: " + h.address)}&body=${encodeURIComponent(tourMessage(h, day, time))}`;
 }
 
 function renderTabs() {
@@ -1064,6 +1073,7 @@ function renderDay(day) {
   $("#dayToolbar").innerHTML = `
     <button class="btn small" id="toggleOrder">${$("#dayOrder").hidden ? "Change order" : "Done reordering"}</button>
     ${manual ? `<span class="pill">Your order</span><button class="btn ghost small" data-reopt="${day}">Re-optimize</button>` : `<span class="pill ok">Fastest route</span>`}
+    <button class="btn ghost small" data-collapseall="1">Collapse all</button><button class="btn ghost small" data-collapseall="0">Expand all</button>
     ${st.lunchMin ? "" : `<button class="btn ghost small" data-addlunch>+ Add lunch</button>`}
     ${st.days === 2 && S.lockDays ? `<button class="btn ghost small" data-rebalance>Rebalance days</button>` : ""}
     ${st.days === 2 ? `<span class="muted small">Move homes between days from any home's details.</span>` : ""}
@@ -1074,6 +1084,12 @@ function renderDay(day) {
     `<div style="padding:14px 0 0 82px"><button class="btn add small" data-addmore>+ Add another home</button></div>`;
 }
 
+// Which cards are folded: per viewer, saved on this device. Visited homes fold on their own.
+let COLLAPSE = {};
+function collapseKey() { return "tp-collapse-" + (LIVE || TOUR || "local"); }
+try { COLLAPSE = JSON.parse(localStorage.getItem("tp-collapse-" + (new URLSearchParams(location.search).get("tour") || "local")) || "{}"); } catch (e) { COLLAPSE = {}; }
+function isCollapsed(h) { return h.id in COLLAPSE ? !!COLLAPSE[h.id] : !!h.done; }
+function setCollapsed(id, v) { if (v === null) delete COLLAPSE[id]; else COLLAPSE[id] = v; try { localStorage.setItem(collapseKey(), JSON.stringify(COLLAPSE)); } catch (e) {} }
 let EDIT = null, PLACEMSG = "", NOTE_EDIT = null, LAST_REMOVED = null, toastT = null;
 // The same buttons appear on each schedule card and in its expanded details.
 function moveBtn(h, day, cls) {
@@ -1157,13 +1173,13 @@ function tlItem(x, day, next) {
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
       <div class="who">${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}${phone ? ` · ${prettyPhone(h.phone)}` : ""}
         <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
-      ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : `<span class="pill warn">No phone yet</span>`}
+      ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : h.email ? `<a class="btn small gold" href="${emailLink(h, day, tm)}" data-stop>Email</a>` : `<span class="pill warn">No phone yet</span>`}
       ${rmBtn}
     </div>` : `<div class="agent">${h.pending && !h.photo ? `<span class="pill" style="flex:1 1 auto;justify-self:start">Getting details… usually within 15 min</span>` : `<span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>`}${rmBtn}</div>`;
   return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
     <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
-    <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
-      <div class="stop-top">${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
+    <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""} ${isCollapsed(h) ? "collapsed" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
+      <div class="stop-top"><button class="collapser" type="button" data-collapse="${h.id}" aria-expanded="${!isCollapsed(h)}" aria-label="${isCollapsed(h) ? "Expand" : "Collapse"} ${esc(h.address)}" data-tip="${isCollapsed(h) ? "Show details" : "Collapse this card"}">${isCollapsed(h) ? "▸" : "▾"}</button>${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
       <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : isNext ? `<span class="pill">Next</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
         <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
@@ -1324,7 +1340,7 @@ function openSheet(id) {
       </div>
       ${h.agents && h.agents.length ? `<p class="small" style="margin:8px 0 0">${h.agents.map(esc).join("<br>")}${h.brokerage ? `<br><span class="muted">${esc(h.brokerage)}</span>` : ""}</p>` : ""}
       ${h.showing ? `<p class="muted small" style="margin:8px 0 0">${esc(h.showing)}</p>` : ""}
-      ${phone ? `<div class="actions" style="margin-top:10px"><a class="btn gold small" href="${smsLink(h, day, tm)}">Text ${esc((h.contact || h.agent).split(/[ (]/)[0])}</a><a class="btn small" href="tel:${phone}">Call</a></div>` : ""}
+      ${phone ? `<div class="actions" style="margin-top:10px"><a class="btn gold small" href="${smsLink(h, day, tm)}">Text ${esc((h.contact || h.agent).split(/[ (]/)[0])}</a><a class="btn small" href="tel:${phone}">Call</a>${h.email ? `<a class="btn small" href="${emailLink(h, day, tm)}">Email</a>` : ""}</div>` : h.email ? `<div class="actions" style="margin-top:10px"><a class="btn gold small" href="${emailLink(h, day, tm)}">Email ${esc((h.contact || h.agent || "").split(/[ (]/)[0])}</a><span class="muted small">${esc(h.email)}</span></div>` : ""}
     </div>
     <div class="grid2">
       <label class="f">Minutes at this home<select data-field="showMin" data-id="${h.id}">${[15, 20, 30, 45, 60, 90].map(v => `<option ${((h.showMin || S.settings.showMin) == v) ? "selected" : ""}>${v}</option>`).join("")}</select></label>
@@ -1385,7 +1401,7 @@ document.getElementById("nameForm").addEventListener("submit", (e) => {
   document.getElementById("nameDlg").close(); checkIn(); renderPresence();
 });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1430,6 +1446,8 @@ document.addEventListener("click", async e => {
     if (LAST_REMOVED) { const { home, index, assign } = LAST_REMOVED; S.homes.splice(Math.min(index, S.homes.length), 0, home); if (assign) S.assign[home.id] = assign; LAST_REMOVED = null; }
     hideToast(); await recompute(); return;
   }
+  if (t.dataset.collapse) { const h = S.homes.find(x => x.id === t.dataset.collapse); if (h) setCollapsed(h.id, !isCollapsed(h)); render(); return; }
+  if (t.dataset.collapseall) { const fold = t.dataset.collapseall === "1"; (PLAN[+S.tab[3]] ? PLAN[+S.tab[3]].order : []).forEach(h => setCollapsed(h.id, fold)); render(); return; }
   if (t.dataset.backlog) {
     const h = S.homes.find(x => x.id === t.dataset.backlog); if (!h) return;
     h.backlog = true; h.pin = 0; S.lockDays = true;
@@ -1467,12 +1485,12 @@ document.addEventListener("click", async e => {
   if (!h) return;
   if (t.dataset.done) {
     const day = S.assign[h.id] || 1;
-    h.done = true; h.doneDay = day; h.doneSeq = Date.now();
+    h.done = true; h.doneDay = day; h.doneSeq = Date.now(); setCollapsed(h.id, null);
     h.doneMin = isLive(day) ? nowMin() : null;
     if (S.manual[day]) S.manual[day] = S.manual[day].filter(id => id !== h.id);
     $("#sheet").close(); await recompute(); return;
   }
-  if (t.dataset.undone) { h.done = false; h.doneDay = null; h.doneMin = null; await recompute(); openSheet(h.id); return; }
+  if (t.dataset.undone) { setCollapsed(h.id, null); h.done = false; h.doneDay = null; h.doneMin = null; await recompute(); openSheet(h.id); return; }
   if (t.dataset.move) {
     h.pin = +t.dataset.to; S.manual = { 1: null, 2: null };
     if (h.pin === 2 && S.settings.days === 1) { S.settings.days = 2; S.lockDays = true; showToast(`Added Day 2 with ${h.address}.`, false); }
