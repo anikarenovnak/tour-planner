@@ -217,6 +217,9 @@ dialog.sheet::backdrop{background:rgba(20,20,20,.45)}
 .confrow{display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center;font-size:13px;background:var(--bg);border-radius:8px;padding:6px 10px;cursor:default}
 .confrow .chk{font-size:13px}
 .cardacts{display:flex;gap:6px;flex-wrap:wrap}
+.agentname{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--gold-ink);cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:color-mix(in srgb,var(--gold-ink) 40%,transparent)}
+.agentname span{font-size:11px;text-decoration:none;display:inline-block}
+.agentinfo{display:block;margin-top:4px;line-height:1.5}
 .pairrow{display:inline-flex;gap:6px;flex-wrap:nowrap}
 .cardacts .btn{padding:5px 10px}
 .timeset{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
@@ -1091,6 +1094,7 @@ function collapseKey() { return "tp-collapse-" + (LIVE || TOUR || "local"); }
 try { COLLAPSE = JSON.parse(localStorage.getItem("tp-collapse-" + (new URLSearchParams(location.search).get("tour") || "local")) || "{}"); } catch (e) { COLLAPSE = {}; }
 function isCollapsed(h) { return h.id in COLLAPSE ? !!COLLAPSE[h.id] : !!h.done; }
 function setCollapsed(id, v) { if (v === null) delete COLLAPSE[id]; else COLLAPSE[id] = v; try { localStorage.setItem(collapseKey(), JSON.stringify(COLLAPSE)); } catch (e) {} }
+const AGENT_OPEN = new Set(); // cards whose agent details are showing (this phone only)
 let EDIT = null, PLACEMSG = "", NOTE_EDIT = null, LAST_REMOVED = null, toastT = null;
 // The same buttons appear on each schedule card and in its expanded details.
 function moveBtn(h, day, cls) {
@@ -1171,9 +1175,13 @@ function tlItem(x, day, next) {
     + (h.yard ? `</div><div class="facts yardline"><span>Yard: ${esc(h.yard)}</span>` : "");
   const phone = telDigits(h.phone);
   const rmBtn = `${NOTE_EDIT === h.id || h.notes ? "" : `<button class="btn ghost rm" data-note="${h.id}">Add note</button>`}`;
+  const who = h.contact && h.contact !== h.agent ? h.contact : h.agent;
+  const agentOpen = AGENT_OPEN.has(h.id);
+  const agentInfo = [h.contact && h.contact !== h.agent ? "Listing agent: " + h.agent : "", h.brokerage ? "Brokerage: " + h.brokerage : "",
+    phone ? "Phone: " + prettyPhone(h.phone) : "", h.email ? "Email: " + h.email : "", (h.agents || []).length > 1 ? "Co-agents: " + h.agents.join("; ") : "", h.showing || ""].filter(Boolean);
   const agentLine = (h.agent || h.contact) ? `<div class="agent">
-      <div class="who">${esc(h.contact && h.contact !== h.agent ? h.contact : h.agent)}${phone ? ` · ${prettyPhone(h.phone)}` : ""}
-        <small>${esc([h.contact && h.contact !== h.agent ? "Listing agent " + h.agent : "", h.brokerage].filter(Boolean).join(", "))}${h.showing ? (h.brokerage || (h.contact && h.contact !== h.agent) ? " · " : "") + esc(h.showing) : ""}</small></div>
+      <div class="who" data-stop>Contact agent <button class="agentname" type="button" data-agent="${h.id}" aria-expanded="${agentOpen}">${esc(who)} <span aria-hidden="true">${agentOpen ? "▴" : "▾"}</span></button>
+        ${agentOpen ? `<small class="agentinfo">${agentInfo.map(esc).join("<br>")}</small>` : ""}</div>
       ${phone ? `<a class="btn small gold" href="${smsLink(h, day, tm)}" data-stop>Text</a><a class="btn small" href="tel:${phone}" data-stop>Call</a>` : h.email ? `<a class="btn small gold" href="${emailLink(h, day, tm)}" data-stop>Email</a>` : `<span class="pill warn">No phone yet</span>`}
       ${rmBtn}
     </div>` : `<div class="agent">${h.pending && !h.photo ? `<span class="pill" style="flex:1 1 auto;justify-self:start">Getting details… usually within 15 min</span>` : `<span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>`}${rmBtn}</div>`;
@@ -1413,7 +1421,7 @@ document.getElementById("nameForm").addEventListener("submit", (e) => {
   document.getElementById("nameDlg").close(); checkIn(); renderPresence();
 });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall]");
+  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall],[data-agent]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1458,6 +1466,7 @@ document.addEventListener("click", async e => {
     if (LAST_REMOVED) { const { home, index, assign } = LAST_REMOVED; S.homes.splice(Math.min(index, S.homes.length), 0, home); if (assign) S.assign[home.id] = assign; LAST_REMOVED = null; }
     hideToast(); await recompute(); return;
   }
+  if (t.dataset.agent) { const id = t.dataset.agent; AGENT_OPEN.has(id) ? AGENT_OPEN.delete(id) : AGENT_OPEN.add(id); render(); return; }
   if (t.dataset.collapse) { const h = S.homes.find(x => x.id === t.dataset.collapse); if (h) setCollapsed(h.id, !isCollapsed(h)); render(); return; }
   if (t.dataset.collapseall) { const fold = t.dataset.collapseall === "1"; (PLAN[+S.tab[3]] ? PLAN[+S.tab[3]].order : []).forEach(h => setCollapsed(h.id, fold)); render(); return; }
   if (t.dataset.backlog) {
