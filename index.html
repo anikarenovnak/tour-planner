@@ -501,7 +501,7 @@ button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;poin
 const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
 // Self-update: every open copy checks for a newer published version and reloads into it,
 // so an old copy can never keep saving with old rules. publish.sh stamps APP_V.
-const APP_V = "1794543104";
+const APP_V = "1794543300";
 async function checkUpdate() {
   if (APP_V === "dev") return;
   try {
@@ -880,8 +880,12 @@ function buildDay(day, order) {
       const reach = t + lg.min + st.buffer + (+st.cushion || 0);
       const fixed = h.fixedTime ? toMin(h.fixedTime) : null;
       const slot = Math.ceil(reach / 30 - 1e-9) * 30; // showings start on the hour or half hour (10:24 -> 10:30)
-      const arrive = fixed != null && !h.done ? Math.max(slot, fixed) : slot; // a booked time wins
-      const wait = arrive - reach, late = fixed != null && !h.done ? Math.max(0, reach - fixed) : 0;
+      // A booked time is THE time on the timeline. If the drive looks too tight, it stays at the
+      // booked time and shows a "you'd arrive late" note instead of moving.
+      const booked = fixed != null && !h.done;
+      const arrive = booked ? fixed : slot;
+      const tight = t + lg.min + st.buffer; // without the extra cushion
+      const wait = Math.max(0, arrive - reach), late = booked ? Math.max(0, Math.round(tight - fixed)) : 0;
       let leave = arrive + (h.showMin || st.showMin);
       if (h.done && live && h.doneMin != null) leave = h.doneMin;
       out.push({ type: "stop", h, idx: i, arrive, leave, t: arrive, wait, late, fixed });
