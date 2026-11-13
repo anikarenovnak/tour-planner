@@ -34,18 +34,18 @@
 :root{
   --bg:#f6f5f2; --card:#ffffff; --ink:#2f2f2f; --head:#4a4a4a; --muted:#7a766e; --line:#e4e0d8;
   --gold:#d1bf99; --gold-ink:#8f7850; --on-gold:#2f2a22; --gold-soft:#f1ead9;
-  --d1:#2f6f73; --d2:#8a5a9e; --ok:#3d8b5a; --warn:#b5652b; --danger:#b03a3a; --add:#2563b8;
+  --d1:#2f6f73; --d2:#8a5a9e; --unconf:#a39d93; --ok:#3d8b5a; --warn:#b5652b; --danger:#b03a3a; --add:#2563b8;
   --f-head:"Jost",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#18181a; --card:#222225; --ink:#ecebe8; --head:#d9d7d2; --muted:#a29e96; --line:#35353a;
   --gold:#cfb98f; --gold-ink:#d6c39c; --on-gold:#2f2a22; --gold-soft:#3a3428;
-  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; --add:#3b7ddd; color-scheme:dark}}
+  --d1:#5fb0b4; --d2:#c497d6; --unconf:#7d786f; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; --add:#3b7ddd; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#18181a; --card:#222225; --ink:#ecebe8; --head:#d9d7d2; --muted:#a29e96; --line:#35353a;
   --gold:#cfb98f; --gold-ink:#d6c39c; --on-gold:#2f2a22; --gold-soft:#3a3428;
-  --d1:#5fb0b4; --d2:#c497d6; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; --add:#3b7ddd; color-scheme:dark}
+  --d1:#5fb0b4; --d2:#c497d6; --unconf:#7d786f; --ok:#6cc58c; --warn:#e3995f; --danger:#e07272; --add:#3b7ddd; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
@@ -158,6 +158,13 @@ label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
 .node{position:relative;z-index:1;margin-top:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:#fff;background:var(--dc)}
 .node.flag{background:var(--card);border:2px solid var(--head);color:var(--head);width:16px;height:16px;margin-top:16px}
 .node.done{background:var(--ok)}
+/* Not confirmed yet: grey until "Showing confirmed" is ticked */
+.node.unconf{background:var(--unconf)}
+.stop.unconf{border-left-color:var(--unconf);border-style:dashed solid dashed dashed;border-left-style:solid}
+.stop.unconf .unconf-tag{display:inline-block}
+.unconf-tag{display:none;white-space:nowrap;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--line);border-radius:999px;padding:2px 8px}
+.pin.unconf{opacity:.95}
+.pin.faded{opacity:.28;filter:grayscale(1)}
 .node.lunch{background:var(--gold);color:var(--on-gold)}
 .node.drive{width:10px;height:10px;margin-top:0;background:var(--card);border:2px solid var(--line);align-self:center}
 .tl-body{padding-block:8px;min-width:0}
@@ -501,7 +508,7 @@ button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;poin
 const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
 // Self-update: every open copy checks for a newer published version and reloads into it,
 // so an old copy can never keep saving with old rules. publish.sh stamps APP_V.
-const APP_V = "1794543559";
+const APP_V = "1794543988";
 async function checkUpdate() {
   if (APP_V === "dev") return;
   try {
@@ -1327,10 +1334,10 @@ function tlItem(x, day, next) {
       ${rmBtn}
     </div>` : `<div class="agent">${h.pending && !h.photo ? `<span class="pill" style="flex:1 1 auto;justify-self:start">Getting details… usually within 15 min</span>` : `<span class="pill warn" style="flex:1 1 auto;justify-self:start">Agent not added yet</span>`}${rmBtn}</div>`;
   return `<div class="tl-item"><div class="tl-time">${tm}<small>${fmt(x.leave)}</small></div>
-    <div class="tl-rail"><span class="node ${h.done ? "done" : ""}">${h.done ? "✓" : x.idx + 1}</span></div>
-    <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${isNext ? "is-next" : ""} ${isCollapsed(h) ? "collapsed" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
+    <div class="tl-rail"><span class="node ${h.done ? "done" : !h.confirmed ? "unconf" : ""}" title="${h.done ? "Visited" : h.confirmed ? "Showing confirmed" : "Not confirmed yet"}">${h.done ? "✓" : x.idx + 1}</span></div>
+    <div class="tl-body"><div class="stop ${h.done ? "is-done" : ""} ${!h.done && !h.confirmed ? "unconf" : ""} ${isNext ? "is-next" : ""} ${isCollapsed(h) ? "collapsed" : ""}" data-open="${h.id}" tabindex="0" role="button" aria-label="Details for ${esc(h.address)}">
       <div class="stop-top"><div class="topbtns"><a class="btn small dir" href="${dirUrl(h)}" target="_blank" rel="noopener" data-stop aria-label="Directions to ${esc(h.address)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span class="dirtxt">Directions</span></a><button class="collapser" type="button" data-collapse="${h.id}" aria-expanded="${!isCollapsed(h)}" aria-label="${isCollapsed(h) ? "Expand" : "Collapse"} ${esc(h.address)}" data-tip="${isCollapsed(h) ? "Show details" : "Collapse this card"}">${isCollapsed(h) ? "▸" : "▾"}</button></div>${h.photo ? `<img class="thumb" src="${esc(h.photo)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
-      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
+      <div style="flex:1;min-width:0">${h.done ? `<span class="pill ok">Done</span>` : ""}${h.confirmed ? ` <span class="pill ok">Confirmed</span>` : ""}${!h.done && !h.confirmed ? `<span class="unconf-tag">Not confirmed</span>` : ""}${h.fixedTime ? ` <span class="pill">Booked ${fmt(toMin(h.fixedTime))}</span>` : ""}
         <div class="a1">${esc(h.address)}</div><div class="a2">${esc([h.area && h.area !== h.city ? h.area : "", h.city].filter(Boolean).join(", "))}</div></div>
       </div>
       ${facts ? `<div class="facts">${facts}</div>` : ""}
@@ -1430,11 +1437,14 @@ async function drawMap(onlyDay) {
     const plan = PLAN[d]; if (!plan || (onlyDay && onlyDay !== d)) continue;
     const col = dayHex(d);
     const pts = [st.start, ...plan.order, endPoint()];
-    routeLine(pts).then(line => { if (tok !== mapToken) return; L.polyline(line, { color: col, weight: 4, opacity: .8 }).addTo(layer).bringToBack(); });
+    routeLine(pts).then(line => { if (tok !== mapToken) return; L.polyline(line, { color: col, weight: 4, opacity: CONF_ONLY ? .3 : .8 }).addTo(layer).bringToBack(); });
     plan.items.filter(x => x.type === "stop").forEach(x => {
       const h = x.h;
-      const m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: "", html: `<div class="pin" style="background:${h.done ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim() : col}"><span>${h.done ? "✓" : x.idx + 1}</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26] }) });
-      m.bindTooltip(`${esc(h.address)} · ${fmt(x.arrive)}`, { direction: "top", offset: [0, -26] });
+      const css = getComputedStyle(document.documentElement);
+      const pinCol = h.done ? css.getPropertyValue("--ok").trim() : h.confirmed ? col : css.getPropertyValue("--unconf").trim();
+      const pinCls = h.done || h.confirmed ? "" : CONF_ONLY ? "faded" : "unconf";
+      const m = L.marker([h.lat, h.lng], { icon: L.divIcon({ className: "", html: `<div class="pin ${pinCls}" style="background:${pinCol}"><span>${h.done ? "✓" : x.idx + 1}</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26] }) });
+      m.bindTooltip(`${esc(h.address)} · ${fmt(x.arrive)}${h.done || h.confirmed ? "" : " · not confirmed"}`, { direction: "top", offset: [0, -26] });
       m.on("click", () => { highlightPin(h.id); openSheet(h.id); });
       m.addTo(layer); bounds.push([h.lat, h.lng]); MARKERS[h.id] = m;
     });
