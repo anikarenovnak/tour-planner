@@ -558,14 +558,18 @@ function canonVal(v) {
   return v === "" || v == null || (typeof v === "number" && isNaN(v)) ? undefined : v;
 }
 function canon(o) { return JSON.stringify(canonVal(o) || {}); }
+// What counts as a real edit: everything shared EXCEPT the computed schedule ("sched": times and
+// dates each phone works out itself). Two app versions can compute it a little differently, and
+// that must never make them re-save over each other.
+function syncKey(st) { const { sched, ...rest } = sharedPart(st); return canon(rest); }
 async function pushLive() {
   if (!LIVE) return;
-  const cmp = canon(sharedPart(S));
+  const cmp = syncKey(S);
   if (cmp === lastSent) return;
   setSync("saving");
   try {
     const remote = await loadLive(); // keep details the helper added that this phone hasn't seen yet
-    if (remote && mergeDetails(remote) && canon(sharedPart(S)) !== cmp) { applying = true; save(); applying = false; render(); }
+    if (remote && mergeDetails(remote) && syncKey(S) !== cmp) { applying = true; save(); applying = false; render(); }
     const r = await fetch(`${DB}/tours/${LIVE}.json`, { method: "PUT", body: JSON.stringify({ ...sharedPart(S), _by: CLIENT, _at: Date.now() }) });
     if (!r.ok) throw new Error(r.status);
     lastSent = cmp; setSync("ok");
@@ -601,8 +605,8 @@ function mergeDetails(remote) {
 function applyRemote(d) {
   if (!d || d._by === CLIENT) return;
   const next = normalize(d);
-  const cmp = canon(sharedPart(next));
-  if (cmp === canon(sharedPart(S))) { lastSent = cmp; return; }
+  const cmp = syncKey(next);
+  if (cmp === syncKey(S)) { lastSent = cmp; return; }
   lastSent = cmp;
   S = { ...next, tab: S.tab, mapDay: S.mapDay };
   applying = true; save(); applying = false;
@@ -1810,7 +1814,7 @@ setInterval(() => { if (S && [1, 2].some(isLive)) recompute(); }, 60000);
   if (LIVE) {
     setSync("connecting");
     const remote = await loadLive();
-    if (remote) { const tab = (S && S.tab) || "day1"; S = { ...normalize(remote), tab }; lastSent = canon(sharedPart(S)); }
+    if (remote) { const tab = (S && S.tab) || "day1"; S = { ...normalize(remote), tab }; lastSent = syncKey(S); }
     else if (!TOUR_DATA && !(S && S.settings)) { LIVE = ""; } // unknown tour id
   }
   if (!S || !S.settings) { S = freshState(); if (TOUR_DATA) S.tab = "day1"; }
