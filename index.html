@@ -501,7 +501,7 @@ button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;poin
 const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
 // Self-update: every open copy checks for a newer published version and reloads into it,
 // so an old copy can never keep saving with old rules. publish.sh stamps APP_V.
-const APP_V = "1794543501";
+const APP_V = "1794543559";
 async function checkUpdate() {
   if (APP_V === "dev") return;
   try {
@@ -1754,7 +1754,7 @@ document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === 
 
 document.addEventListener("change", e => {
   const el = e.target, st = S.settings;
-  if (el.dataset.confirm) { const h = S.homes.find(x => x.id === el.dataset.confirm); if (h) h.confirmed = el.checked; save(); render(); return; }
+  if (el.dataset.confirm) { const h = S.homes.find(x => x.id === el.dataset.confirm); if (h) h.confirmed = el.checked; replan(); return; }
   if (el.dataset.fixed) { const h = S.homes.find(x => x.id === el.dataset.fixed); if (h) { h.fixedTime = el.value || ""; for (const d of [1, 2]) if (S.manual[d] && h.fixedTime) S.manual[d] = null; } replan(); return; }
   if (el.dataset.set) {
     const k = el.dataset.set;
