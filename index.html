@@ -501,7 +501,7 @@ button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;poin
 const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
 // Self-update: every open copy checks for a newer published version and reloads into it,
 // so an old copy can never keep saving with old rules. publish.sh stamps APP_V.
-const APP_V = "1794543300";
+const APP_V = "1794543447";
 async function checkUpdate() {
   if (APP_V === "dev") return;
   try {
@@ -859,7 +859,12 @@ function dayOrder(day, assignment) {
     order = man.map(id => byId.get(id)).filter(Boolean);
     const extra = rest.filter(h => !man.includes(h.id));
     order = [...order, ...extra];
-  } else if (rest.some(h => h.fixedTime)) order = orderWithBookings(day, from, B, rest, done.length);
+  } else if (rest.some(h => h.fixedTime)) {
+    // Homes with a booked time go first, in time order; homes without one aren't confirmed yet,
+    // so they come after the last booked showing, in the fastest driving order from there.
+    const booked = rest.filter(h => h.fixedTime).sort((a, b) => toMin(a.fixedTime) - toMin(b.fixedTime));
+    order = [...booked, ...solve(booked[booked.length - 1], B, rest.filter(h => !h.fixedTime))];
+  }
   else order = solve(from, B, rest);
   return [...done, ...order];
 }
