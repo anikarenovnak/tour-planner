@@ -499,6 +499,23 @@ button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;poin
 (() => {
 "use strict";
 const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
+// Self-update: every open copy checks for a newer published version and reloads into it,
+// so an old copy can never keep saving with old rules. publish.sh stamps APP_V.
+const APP_V = "1794543104";
+async function checkUpdate() {
+  if (APP_V === "dev") return;
+  try {
+    const txt = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
+    const v = (txt.match(/const APP_V = "([^"]+)"/) || [])[1];
+    if (!v || v === APP_V) return;
+    const a = document.activeElement;
+    if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; // don't reload while someone is typing; next check will
+    const u = new URL(location.href); u.searchParams.set("v", v); location.replace(u.toString());
+  } catch (e) {}
+}
+setInterval(checkUpdate, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkUpdate(); });
+setTimeout(checkUpdate, 3000);
 const KEY = "valenne-tour-planner-v1" + (TOUR ? ":" + TOUR : "");
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
