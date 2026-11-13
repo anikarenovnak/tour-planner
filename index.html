@@ -501,7 +501,7 @@ button[disabled].clearbtn,#clearAll[disabled]{opacity:.4;cursor:not-allowed;poin
 const TOUR = (new URLSearchParams(location.search).get("tour") || "").replace(/[^a-z0-9-]/gi, "");
 // Self-update: every open copy checks for a newer published version and reloads into it,
 // so an old copy can never keep saving with old rules. publish.sh stamps APP_V.
-const APP_V = "1794543447";
+const APP_V = "1794543501";
 async function checkUpdate() {
   if (APP_V === "dev") return;
   try {
@@ -509,7 +509,10 @@ async function checkUpdate() {
     const v = (txt.match(/const APP_V = "([^"]+)"/) || [])[1];
     if (!v || v === APP_V) return;
     const a = document.activeElement;
-    if (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName)) return; // don't reload while someone is typing; next check will
+    // don't reload while someone is typing text (notes, addresses); time boxes and checkboxes are saved already
+    if (a && (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && /^(text|search|url|email|tel)$/.test(a.type)))) {
+      a.addEventListener("blur", () => setTimeout(checkUpdate, 500), { once: true }); return;
+    }
     const u = new URL(location.href); u.searchParams.set("v", v); location.replace(u.toString());
   } catch (e) {}
 }
