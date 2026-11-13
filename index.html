@@ -142,6 +142,7 @@ label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
 
 .daymapcol .mapbox{height:100%}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.btn.on{background:var(--ok,#3c7a4a);color:#fff;border-color:transparent}
 .banner{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:10px;background:var(--gold-soft);margin-bottom:14px}
 .banner b{font-family:var(--f-head);font-weight:500}
 
@@ -1178,6 +1179,7 @@ function renderDay(day) {
   $("#dayToolbar").innerHTML = `
     <button class="btn small" id="toggleOrder">${$("#dayOrder").hidden ? "Change order" : "Done reordering"}</button>
     ${manual ? `<span class="pill">Your order</span><button class="btn ghost small" data-reopt="${day}">Re-optimize</button>` : `<span class="pill ok">Fastest route</span>`}
+    <button class="btn small${CONF_ONLY ? " on" : " ghost"}" data-confonly aria-pressed="${CONF_ONLY}">${CONF_ONLY ? "✓ " : ""}Confirmed only (${plan.order.filter(h => h.confirmed).length})</button>
     <button class="btn ghost small" data-collapseall="1">Collapse all</button><button class="btn ghost small" data-collapseall="0">Expand all</button>
     ${st.lunchMin ? "" : `<button class="btn ghost small" data-addlunch>+ Add lunch</button>`}
     ${st.days === 2 && S.lockDays ? `<button class="btn ghost small" data-rebalance>Rebalance days</button>` : ""}
@@ -1185,7 +1187,10 @@ function renderDay(day) {
     ${usingFallback ? `<span class="pill warn">Drive times estimated (offline)</span>` : ""}`;
   renderOrderList($("#dayOrder"), day);
   plan.items.forEach((x, i) => { if (x.type === "drive") { const n = plan.items[i + 1]; x.waitAfter = n && n.type === "stop" ? n.wait || 0 : 0; } });
-  $("#timeline").innerHTML = plan.items.map(x => tlItem(x, day, next)).join("") +
+  const nConf = plan.order.filter(h => h.confirmed).length;
+  const shown = CONF_ONLY ? plan.items.filter(x => x.type === "stop" ? x.h.confirmed : x.type === "start" || x.type === "end") : plan.items;
+  $("#timeline").innerHTML = (CONF_ONLY ? `<div class="banner small" style="margin-bottom:10px"><div style="flex:1;min-width:0">Showing <b>${nConf}</b> confirmed showing${nConf === 1 ? "" : "s"} of ${plan.order.length} homes. Times are from the full route.</div><button class="btn ghost small" data-confonly>Show all</button></div>` : "") +
+    (CONF_ONLY && !nConf ? `<div class="empty">No confirmed showings on this day yet. Tick <b>Showing confirmed</b> on a home once the agent says yes.</div>` : shown.map(x => tlItem(x, day, next)).join("")) +
     `<div style="padding:14px 0 0 82px"><button class="btn add small" data-addmore>+ Add another home</button></div>`;
 }
 
@@ -1195,6 +1200,7 @@ function collapseKey() { return "tp-collapse-" + (LIVE || TOUR || "local"); }
 try { COLLAPSE = JSON.parse(localStorage.getItem("tp-collapse-" + (new URLSearchParams(location.search).get("tour") || "local")) || "{}"); } catch (e) { COLLAPSE = {}; }
 function isCollapsed(h) { return h.id in COLLAPSE ? !!COLLAPSE[h.id] : !!h.done; }
 function setCollapsed(id, v) { if (v === null) delete COLLAPSE[id]; else COLLAPSE[id] = v; try { localStorage.setItem(collapseKey(), JSON.stringify(COLLAPSE)); } catch (e) {} }
+let CONF_ONLY = false; try { CONF_ONLY = localStorage.getItem("tp-confonly") === "1"; } catch (e) {}
 const AGENT_OPEN = new Set(); // cards whose agent details are showing (this phone only)
 let EDIT = null, PLACEMSG = "", NOTE_EDIT = null, LAST_REMOVED = null, toastT = null;
 // The same buttons appear on each schedule card and in its expanded details.
@@ -1578,7 +1584,7 @@ document.getElementById("nameForm").addEventListener("submit", (e) => {
   document.getElementById("nameDlg").close(); checkIn(); renderPresence();
 });
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall],[data-agent],[data-tourstart],[data-tourend]");
+  const t = e.target.closest("[data-confonly],[data-tab],[data-open],[data-close],[data-done],[data-undone],[data-move],[data-reopt],[data-remove],[data-mapday],[data-days],#toggleOrder,[data-stop],[data-rebalance],[data-edit],[data-setplace],[data-addlunch],[data-clearall],[data-share],[data-copyshare],[data-dismissshared],[data-note],[data-notedone],[data-addmore],[data-undo],[data-clearfixed],[data-note-sheet],[data-backlog],[data-restore],[data-collapse],[data-collapseall],[data-agent],[data-tourstart],[data-tourend]");
   if (!t) { if (e.target === $("#sheet")) $("#sheet").close(); return; }
   if (t.hasAttribute("data-stop")) { e.stopPropagation(); return; }
   if (t.dataset.tab) { S.tab = t.dataset.tab; save(); render(); scrollTo(0, 0); return; }
@@ -1626,6 +1632,7 @@ document.addEventListener("click", async e => {
   }
   if (t.dataset.agent) { const id = t.dataset.agent; AGENT_OPEN.has(id) ? AGENT_OPEN.delete(id) : AGENT_OPEN.add(id); render(); return; }
   if (t.dataset.collapse) { const h = S.homes.find(x => x.id === t.dataset.collapse); if (h) setCollapsed(h.id, !isCollapsed(h)); render(); return; }
+  if (t.hasAttribute("data-confonly")) { CONF_ONLY = !CONF_ONLY; try { localStorage.setItem("tp-confonly", CONF_ONLY ? "1" : "0"); } catch (e) {} render(); return; }
   if (t.dataset.collapseall) { const fold = t.dataset.collapseall === "1"; (PLAN[+S.tab[3]] ? PLAN[+S.tab[3]].order : []).forEach(h => setCollapsed(h.id, fold)); render(); return; }
   if (t.dataset.tourstart) {
     const day = +t.dataset.tourstart, st = S.settings;
